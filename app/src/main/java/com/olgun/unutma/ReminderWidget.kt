@@ -13,7 +13,7 @@ class ReminderWidget:AppWidgetProvider(){
   fun refresh(c:Context){val m=AppWidgetManager.getInstance(c);update(c,m,m.getAppWidgetIds(ComponentName(c,ReminderWidget::class.java)))}
   private fun update(c:Context,m:AppWidgetManager,ids:IntArray){
    val now=System.currentTimeMillis()
-   val reminders=Store.all(c).filter{it.repeat || it.time>now}.sortedWith(compareBy<Reminder>({Store.next(it,now)},{it.id}))
+   val reminders=Store.all(c).filter{it.repeat || it.time>now || SpeechService.activeId(c)==it.id}.sortedWith(compareBy<Reminder>({Store.next(it,now)},{it.id}))
    val fmt=SimpleDateFormat("dd.MM.yyyy HH:mm",Locale("tr","TR"))
    ids.forEach { id ->
     val v=RemoteViews(c.packageName,R.layout.widget)
