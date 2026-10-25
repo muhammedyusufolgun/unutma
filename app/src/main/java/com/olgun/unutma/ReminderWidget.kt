@@ -23,7 +23,7 @@ class ReminderWidget:AppWidgetProvider(){
      v.setTextViewText(R.id.details,"")
      reminders.forEach { r ->
       val item=RemoteViews(c.packageName,R.layout.widget_row)
-      item.setInt(R.id.row_container,"setBackgroundResource",if(SpeechService.activeId(c)==r.id)R.drawable.widget_active else R.drawable.widget_normal)
+      item.setInt(R.id.row_container,"setBackgroundResource",if(SpeechService.activeId(c)==r.id && (android.os.SystemClock.uptimeMillis()/500)%2L==0L)R.drawable.widget_active else R.drawable.widget_normal)
       val base=android.os.SystemClock.elapsedRealtime()+(Store.next(r,now)-System.currentTimeMillis())
       item.setChronometerCountDown(R.id.row_countdown,true)
       item.setChronometer(R.id.row_countdown,base,null,true)
