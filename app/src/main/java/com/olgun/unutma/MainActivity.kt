@@ -41,7 +41,7 @@ class MainActivity:Activity(){
   list.removeAllViews()
   val now=System.currentTimeMillis()
   val f=SimpleDateFormat("dd.MM.yyyy HH:mm",Locale("tr","TR"))
-  Store.all(this).filter{it.repeat||it.time>=now}.sortedWith(compareBy<Reminder>({Store.next(it,now)},{it.id})).forEach{r->
+  Store.all(this).filter{it.repeat||it.time>=now||SpeechService.activeId(this)==it.id}.sortedWith(compareBy<Reminder>({Store.next(it,now)},{it.id})).forEach{r->
    val active=SpeechService.activeId(this)==r.id
    val panel=LinearLayout(this).apply{orientation=1;setPadding(dp(12),dp(12),dp(12),dp(12));background=android.graphics.drawable.GradientDrawable().apply{setColor(Color.WHITE);setStroke(dp(1),if(active && (SystemClock.uptimeMillis()/500)%2L==0L)Color.RED else Color.TRANSPARENT)}}
    list.addView(panel,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
