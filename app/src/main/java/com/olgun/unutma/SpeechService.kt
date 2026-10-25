@@ -11,6 +11,8 @@ class SpeechService:Service(),TextToSpeech.OnInitListener {
   const val STOP="com.olgun.unutma.STOP_SPEECH"
   fun activeId(c:android.content.Context)=c.getSharedPreferences("speech_state",0).getInt("active",-1)
  }
+ private val uiHandler=android.os.Handler(android.os.Looper.getMainLooper())
+ private val widgetBlink=object:Runnable{override fun run(){ReminderWidget.refresh(this@SpeechService);uiHandler.postDelayed(this,500)}}
  private var tts:TextToSpeech?=null
  private var message=""
  private var reminderId=-1
@@ -22,7 +24,7 @@ class SpeechService:Service(),TextToSpeech.OnInitListener {
   message=intent?.getStringExtra("message").orEmpty()
   reminderId=intent?.getIntExtra("id",-1)?:-1
   getSharedPreferences("speech_state",0).edit().putInt("active",reminderId).apply()
-  ReminderWidget.refresh(this)
+  uiHandler.removeCallbacks(widgetBlink);uiHandler.post(widgetBlink)
   val manager=getSystemService(NotificationManager::class.java)
   manager.createNotificationChannel(NotificationChannel("speech","Sesli hatırlatmalar",NotificationManager.IMPORTANCE_HIGH))
   val open=PendingIntent.getActivity(this,0,Intent(this,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
@@ -49,6 +51,7 @@ class SpeechService:Service(),TextToSpeech.OnInitListener {
   t.speak(parts[0],TextToSpeech.QUEUE_FLUSH,null,"part0")
  }
  override fun onDestroy(){
+  uiHandler.removeCallbacks(widgetBlink)
   tts?.stop();tts?.shutdown();tts=null
   getSharedPreferences("speech_state",0).edit().putInt("active",-1).apply()
   ReminderWidget.refresh(this)
