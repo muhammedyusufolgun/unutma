@@ -48,7 +48,8 @@ class MainActivity:Activity(){
    val until=(Store.next(r,now)-now).coerceAtLeast(0)/1000
    val countdown="%02d Saat %02d Dakika %02d Saniye".format(until/3600,(until%3600)/60,until%60)
    val title=if(r.repeat)SimpleDateFormat("HH:mm",Locale("tr","TR")).format(r.time) else f.format(r.time)
-   panel.addView(TextView(this).apply{text=title+"  "+(if(r.repeat)"Tekrarlı Alarm" else "Birkez Alarm")+"  "+countdown;textSize=14f;setTextColor(Color.BLACK);setTypeface(null,android.graphics.Typeface.BOLD)})
+   panel.addView(TextView(this).apply{text=title+"  "+(if(r.repeat)"Tekrarlı Alarm" else "Tek Alarm");textSize=14f;setTextColor(Color.BLACK);includeFontPadding=false;setPadding(0,0,0,0)})
+   panel.addView(TextView(this).apply{text=countdown;textSize=14f;setTextColor(Color.BLACK);setTypeface(null,android.graphics.Typeface.BOLD);includeFontPadding=false;setPadding(0,0,0,0)})
    panel.addView(TextView(this).apply{text=r.text;textSize=16f;setTextColor(Color.BLACK)})
    val actions=LinearLayout(this).apply{orientation=0};panel.addView(actions)
    actions.addView(button("Düzenle",0xffffef9b.toInt()).apply{setOnClickListener{editing=r.id;date.setText(if(r.repeat)"" else fmt.format(r.time));time.setText(clock.format(r.time));input.setText(r.text);input.requestFocus();(getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(input,InputMethodManager.SHOW_IMPLICIT)}},LinearLayout.LayoutParams(0,dp(46),1f))
