@@ -28,11 +28,16 @@ class ReminderWidget:AppWidgetProvider(){
       item.setChronometerCountDown(R.id.row_countdown,true)
       item.setChronometer(R.id.row_countdown,base,null,true)
       item.setTextViewText(R.id.row_message,(if(r.repeat) "Her gün" else fmt.format(r.time))+" · "+r.text)
+      item.setOnClickPendingIntent(R.id.row_container,PendingIntent.getActivity(c,r.id,Intent(c,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+      item.setOnClickPendingIntent(R.id.row_message,PendingIntent.getActivity(c,r.id,Intent(c,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+      item.setOnClickPendingIntent(R.id.row_countdown,PendingIntent.getActivity(c,r.id,Intent(c,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
       v.addView(R.id.reminder_rows,item)
      }
     }
     val pi=PendingIntent.getActivity(c,0,Intent(c,MainActivity::class.java),PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     v.setOnClickPendingIntent(R.id.title,pi)
+    v.setOnClickPendingIntent(R.id.details,pi)
+    v.setOnClickPendingIntent(R.id.reminder_rows,pi)
     m.updateAppWidget(id,v)
    }
   }
