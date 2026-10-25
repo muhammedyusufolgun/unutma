@@ -1,0 +1,39 @@
+package com.olgun.unutma
+import android.app.*
+import android.content.*
+import android.graphics.Color
+import android.os.*
+import android.provider.Settings
+import android.speech.tts.TextToSpeech
+import android.view.*
+import android.view.inputmethod.InputMethodManager
+import android.widget.*
+import java.text.SimpleDateFormat
+import java.util.*
+
+class MainActivity:Activity(){
+ private lateinit var root:LinearLayout;private lateinit var list:LinearLayout;private lateinit var input:EditText;private lateinit var date:EditText;private lateinit var time:EditText;private lateinit var done:Button
+ private var editing:Int?=null;private var dateChosen=false;private var timeChosen=false
+ private val fmt=SimpleDateFormat("dd.MM.yyyy",Locale("tr","TR"));private val clock=SimpleDateFormat("HH:mm",Locale("tr","TR"))
+ private fun dp(v:Int)=(v*resources.displayMetrics.density).toInt()
+ private fun button(label:String,color:Int):Button=Button(this).apply{text=label;setTextColor(Color.BLACK);setAllCaps(false);setBackgroundTintList(android.content.res.ColorStateList.valueOf(color))}
+ override fun onCreate(b:Bundle?){super.onCreate(b);window.statusBarColor=Color.rgb(244,246,248);window.decorView.systemUiVisibility=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);show();checkPermissions()}
+ private fun show(){val scroll=ScrollView(this);scroll.isFillViewport=true;root=LinearLayout(this).apply{orientation=1;setPadding(dp(16),dp(18),dp(16),dp(12));setBackgroundColor(Color.rgb(248,250,252))};scroll.addView(root);setContentView(scroll)
+ root.addView(TextView(this).apply{text="Zamanlı Sesli Mesaj";textSize=23f;setTextColor(Color.BLACK);gravity=Gravity.CENTER;setTypeface(null,1);setPadding(0,0,0,dp(20))})
+ val row=LinearLayout(this).apply{orientation=0};root.addView(row)
+ date=EditText(this).apply{hint="Tarih: GG.AA.YYYY";setSingleLine(true);inputType=android.text.InputType.TYPE_CLASS_DATETIME or android.text.InputType.TYPE_DATETIME_VARIATION_DATE};time=EditText(this).apply{hint="Saat: SS:DD (isteğe bağlı)";setSingleLine(true);inputType=android.text.InputType.TYPE_CLASS_DATETIME or android.text.InputType.TYPE_DATETIME_VARIATION_TIME}
+ row.addView(date,LinearLayout.LayoutParams(0,dp(55),1f));row.addView(time,LinearLayout.LayoutParams(0,dp(55),1f))
+ val pick=LinearLayout(this);root.addView(pick);pick.addView(button("Tarih seç",0xffeeeeee.toInt()).apply{setOnClickListener{val c=Calendar.getInstance();DatePickerDialog(this@MainActivity,{_,y,m,d->date.setText("%02d.%02d.%04d".format(d,m+1,y));dateChosen=true},c.get(Calendar.YEAR),c.get(Calendar.MONTH),c.get(Calendar.DAY_OF_MONTH)).show()}},LinearLayout.LayoutParams(0,dp(45),1f));pick.addView(button("Saat seç",0xffeeeeee.toInt()).apply{setOnClickListener{val c=Calendar.getInstance();TimePickerDialog(this@MainActivity,{_,h,m->time.setText("%02d:%02d".format(h,m));timeChosen=true},c.get(Calendar.HOUR_OF_DAY),c.get(Calendar.MINUTE),true).show()}},LinearLayout.LayoutParams(0,dp(45),1f))
+ input=EditText(this).apply{hint="Sesli okunacak mesajı yazın";minLines=2;maxLines=12;gravity=Gravity.TOP;inputType=android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE};root.addView(input,LinearLayout.LayoutParams(-1,-2))
+ done=button("Tamam",0xffdddddd.toInt());done.visibility=View.GONE;root.addView(done,LinearLayout.LayoutParams(-1,dp(48)));input.addTextChangedListener(object:android.text.TextWatcher{override fun beforeTextChanged(s:CharSequence?,a:Int,c:Int,f:Int){};override fun onTextChanged(s:CharSequence?,st:Int,b:Int,count:Int){done.visibility=if(s.isNullOrBlank())View.GONE else View.VISIBLE};override fun afterTextChanged(s:android.text.Editable?) {}})
+ done.setOnClickListener{save()};root.addView(button("Yeni Ekle",0xffb9efb7.toInt()).apply{setOnClickListener{editing=null;date.text.clear();time.text.clear();input.text.clear();dateChosen=false;timeChosen=false;input.requestFocus();(getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(input,InputMethodManager.SHOW_IMPLICIT)}},LinearLayout.LayoutParams(-1,dp(52)))
+ list=LinearLayout(this).apply{orientation=1};root.addView(list);root.addView(Space(this),LinearLayout.LayoutParams(1,dp(28)));root.addView(TextView(this).apply{text="Muhammed Yusuf OLGUN";gravity=Gravity.CENTER;textSize=12f;setTextColor(0xffaaaaaa.toInt())},LinearLayout.LayoutParams(-1,dp(35)));render()}
+ private fun save(){try{val d=fmt.parse(date.text.toString().trim())?:throw Exception();val raw=time.text.toString().trim();val repeat=raw.isEmpty();val hm=if(repeat)"09:00" else raw;val t=clock.parse(hm)?:throw Exception();val cal=Calendar.getInstance().apply{time=d};val tc=Calendar.getInstance().apply{time=t};cal.set(Calendar.HOUR_OF_DAY,tc.get(Calendar.HOUR_OF_DAY));cal.set(Calendar.MINUTE,tc.get(Calendar.MINUTE));cal.set(Calendar.SECOND,0);cal.set(Calendar.MILLISECOND,0);if(!repeat && cal.timeInMillis<=System.currentTimeMillis())throw IllegalArgumentException("Gelecekte bir tarih ve saat girin")
+ val items=Store.all(this).toMutableList();val id=editing?:((items.maxOfOrNull{it.id}?:0)+1);Alarms.cancel(this,id);items.removeAll{it.id==id};val r=Reminder(id,cal.timeInMillis,input.text.toString().trim(),repeat);items.add(r);Store.save(this,items);Alarms.plan(this,r);editing=null;date.text.clear();time.text.clear();input.text.clear();(getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(input.windowToken,0);input.clearFocus();render();Toast.makeText(this,"Mesaj kaydedildi",Toast.LENGTH_SHORT).show()
+ }catch(e:Exception){Toast.makeText(this,e.message?:"Tarih GG.AA.YYYY, saat SS:DD olmalı",Toast.LENGTH_LONG).show()}}
+ private fun render(){list.removeAllViews();val f=SimpleDateFormat("dd.MM.yyyy HH:mm",Locale("tr","TR"));Store.all(this).sortedBy{Store.next(it)}.forEach{r->val panel=LinearLayout(this).apply{orientation=1;setPadding(dp(12),dp(12),dp(12),dp(12));setBackgroundColor(Color.WHITE)};val lp=LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)};list.addView(panel,lp);panel.addView(TextView(this).apply{text="${f.format(r.time)}  ${if(r.repeat)"(Her gün)" else "(Bir kez)"}\n${r.text}";textSize=16f;setTextColor(Color.BLACK);setTextIsSelectable(false)});val actions=LinearLayout(this);panel.addView(actions);actions.addView(button("Düzenle",0xffffef9b.toInt()).apply{setOnClickListener{editing=r.id;date.setText(fmt.format(r.time));time.setText(if(r.repeat)"" else clock.format(r.time));input.setText(r.text);input.requestFocus();(getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(input,InputMethodManager.SHOW_IMPLICIT)}},LinearLayout.LayoutParams(0,dp(46),1f));actions.addView(button("Sil",0xffffb8b8.toInt()).apply{setOnClickListener{AlertDialog.Builder(this@MainActivity).setMessage("Mesaj silinsin mi?").setPositiveButton("Sil"){_,_->Alarms.cancel(this@MainActivity,r.id);Store.save(this@MainActivity,Store.all(this@MainActivity).filterNot{it.id==r.id});render()}.setNegativeButton("Vazgeç",null).show()}},LinearLayout.LayoutParams(0,dp(46),1f))}}
+ private fun checkPermissions(){if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED)requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),10)
+ if(Build.VERSION.SDK_INT>=31 && !getSystemService(AlarmManager::class.java).canScheduleExactAlarms())AlertDialog.Builder(this).setMessage("Hatırlatmaların zamanında çalışması için kesin alarm iznini etkinleştirin.").setPositiveButton("Ayarlar"){_,_->startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))}.setNegativeButton("Sonra",null).show()
+ val tts=TextToSpeech(this){status->if(status==TextToSpeech.SUCCESS){val probe=TextToSpeech(this,null);probe.shutdown()} };tts.shutdown()
+ }
+}
