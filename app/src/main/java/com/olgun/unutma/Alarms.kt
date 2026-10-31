@@ -10,4 +10,14 @@ class AlarmReceiver:android.content.BroadcastReceiver(){override fun onReceive(c
  try {androidxPlaceholder(c,r.id,r.text)}catch(_:Exception){};ReminderWidget.refresh(c)}
  private fun androidxPlaceholder(c:Context,id:Int,s:String){val i=Intent(c,SpeechService::class.java).putExtra("message",s).putExtra("id",id);c.startForegroundService(i)}
 }
-class BootReceiver:android.content.BroadcastReceiver(){override fun onReceive(c:Context,i:Intent){Store.all(c).forEach { Alarms.plan(c,it) };ReminderWidget.refresh(c)}}
+class BootReceiver:android.content.BroadcastReceiver(){
+ override fun onReceive(c:Context,i:Intent){
+  if(i.action !in setOf(Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED, Intent.ACTION_MY_PACKAGE_REPLACED))return
+  try { Store.reconcileAlarms(c) }
+  catch(e:Exception){ android.util.Log.e("TimeIkizAlarm", "Alarm recovery failed", e) }
+  try { ReminderWidget.refresh(c) }
+  catch(e:Exception){ android.util.Log.w("TimeIkizAlarm", "Widget refresh failed", e) }
+  try { MessageSyncScheduler.schedule(c) }
+  catch(e:Exception){ android.util.Log.w("TimeIkizAlarm", "Background sync scheduling failed", e) }
+ }
+}
