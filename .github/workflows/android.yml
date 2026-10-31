@@ -14,9 +14,9 @@ jobs:
         run: python3 tools/verify_time_ikiz_sources.py
       - name: Test relay message signatures
         run: |
-          python3 -m pip install 'cryptography>=42,<47'
+          python3 -m pip install -r relay/requirements.txt
           cd relay
-          python3 -m unittest -v test_signatures
+          python3 -m unittest -v test_signatures test_server
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
