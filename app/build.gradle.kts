@@ -4,3 +4,7 @@ android { namespace = "com.olgun.unutma"; compileSdk = 35
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
  kotlinOptions { jvmTarget = "17" }
 }
+dependencies {
+ implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
+ implementation("androidx.work:work-runtime-ktx:2.9.1")
+}
