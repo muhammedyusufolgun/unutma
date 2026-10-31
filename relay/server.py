@@ -9,6 +9,7 @@ from flask import Flask, request, jsonify
 from signatures import verify
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 128 * 1024
 DB = os.environ.get("TIME_IKIZ_DB", "time_ikiz.sqlite3")
 LOCK = threading.RLock()
 ID = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
@@ -65,7 +66,7 @@ def register():
     user=data.get("id","")
     token=data.get("token","")
     try:
-        if not ID.fullmatch(user) or len(base64.b64decode(token,validate=True))<32:
+        if not isinstance(user,str) or not isinstance(token,str) or not ID.fullmatch(user) or len(token)>256 or len(base64.b64decode(token,validate=True))<32:
             return error("Invalid registration",400)
         pub=base64.b64decode(data["public_key"],validate=True)
         signing=base64.b64decode(data["signing_public_key"],validate=True)
@@ -87,7 +88,7 @@ def add_contact():
     with LOCK,connection() as db:
         user=identity(db)
         if not user:return error("Unauthorized",401)
-        if not ID.fullmatch(peer) or peer==user:return error("Invalid peer",400)
+        if not isinstance(peer,str) or not ID.fullmatch(peer) or peer==user:return error("Invalid peer",400)
         if not db.execute("SELECT 1 FROM users WHERE id=?",(peer,)).fetchone():return error("Unknown peer",404)
         db.execute("INSERT OR IGNORE INTO contacts(owner,peer) VALUES(?,?)",(user,peer))
         return jsonify(ok=True,mutual=mutual(db,user,peer))
@@ -127,8 +128,8 @@ def send():
     with LOCK,connection() as db:
         user=identity(db)
         if not user:return error("Unauthorized",401)
-        if not ID.fullmatch(recipient) or not MSG.fullmatch(msg):return error("Invalid envelope",400)
-        if not isinstance(ciphertext,str) or len(ciphertext)>100000 or not isinstance(signature,str):return error("Invalid payload",400)
+        if not isinstance(recipient,str) or not isinstance(msg,str) or not ID.fullmatch(recipient) or not MSG.fullmatch(msg):return error("Invalid envelope",400)
+        if not isinstance(ciphertext,str) or len(ciphertext)>100000 or not isinstance(signature,str) or len(signature)>256:return error("Invalid payload",400)
         if not mutual(db,user,recipient):return error("Mutual contact required",403)
         key=db.execute("SELECT signing_public_key FROM users WHERE id=?",(user,)).fetchone()["signing_public_key"]
         if not verify(key,signature,user,recipient,msg,ciphertext):return error("Invalid signature",403)
@@ -158,6 +159,7 @@ def ack():
     with LOCK,connection() as db:
         user=identity(db)
         if not user:return error("Unauthorized",401)
+        if not isinstance(msg,str) or not MSG.fullmatch(msg):return error("Invalid message ID",400)
         db.execute("DELETE FROM messages WHERE id=? AND recipient=?",(msg,user))
         return jsonify(ok=True)
 
