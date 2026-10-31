@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+"""Fail closed before building a Time-ikiz APK from incomplete Android sources."""
+from pathlib import Path
+import sys
+import xml.etree.ElementTree as ET
+
+root = Path(__file__).resolve().parents[1]
+src = root / "app/src/main/java/com/olgun/unutma"
+required = ["InternetMessaging.kt", "MessageSyncWorker.kt", "Store.kt",
+            "Alarms.kt", "MainActivity.kt", "ReminderWidget.kt", "SpeechService.kt"]
+errors = []
+for name in required:
+    if not (src / name).is_file():
+        errors.append(f"Missing Android source: {name}")
+for xml in (root / "app/src/main").rglob("*.xml"):
+    try:
+        ET.parse(xml)
+    except ET.ParseError as exc:
+        errors.append(f"Invalid XML {xml.relative_to(root)}: {exc}")
+def check(file, phrase, label):
+    if not file.is_file() or phrase not in file.read_text(encoding="utf-8"):
+        errors.append(label)
+check(src/"Store.kt", "fun addIncomingAtomic(", "Atomic incoming persistence missing")
+check(src/"InternetMessaging.kt", "verifyPeer(", "Sender signature verification missing")
+check(src/"InternetMessaging.kt", "Store.addIncomingAtomic(", "Incoming persistence not integrated")
+check(src/"MessageSyncWorker.kt", "InternetMessaging.sync(", "Worker not connected to sync")
+check(root/"app/build.gradle.kts", "androidx.work:work-runtime-ktx", "WorkManager dependency missing")
+check(root/"app/build.gradle.kts", "org.bouncycastle:bcprov", "Ed25519 dependency missing")
+check(root/"app/src/main/AndroidManifest.xml", "android.permission.INTERNET", "Internet permission missing")
+if errors:
+    for error in errors:
+        print("FAIL:", error, file=sys.stderr)
+    sys.exit(1)
+print("PASS: Required sources, integrations, dependencies, and XML")
