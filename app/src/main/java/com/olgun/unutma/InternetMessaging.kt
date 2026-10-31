@@ -86,6 +86,7 @@ object InternetMessaging {
  fun register(c:Context,base:String,id:String){
   require(base.startsWith("https://") && id.matches(Regex("[a-zA-Z0-9_-]{8,64}")))
   val token=enc(ByteArray(32).also{SecureRandom().nextBytes(it)})
+  check(!configured(c)){"This device is already registered; changing identity requires an explicit recovery flow"}
   val old=server(c)
   check(prefs(c).edit().putString("server",base.trimEnd('/')).commit())
   try {
