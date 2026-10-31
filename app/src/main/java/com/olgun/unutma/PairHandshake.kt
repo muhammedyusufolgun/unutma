@@ -37,6 +37,7 @@ object PairHandshake {
    require(encoded.size<=1024)
    val key=KeyFactory.getInstance("RSA").generatePublic(X509EncodedKeySpec(encoded))
    require((key as java.security.interfaces.RSAPublicKey).modulus.bitLength()>=2048)
+   require(requests.size<64){"Too many pending requests"}
    requests[id]=Pending(ip,key,System.currentTimeMillis())
    val intent=Intent(c,MainActivity::class.java).apply {
     action="com.olgun.timeikiz.PAIR_REQUEST"
