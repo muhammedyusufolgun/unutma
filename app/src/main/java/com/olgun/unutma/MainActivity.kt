@@ -94,6 +94,10 @@ class MainActivity:Activity(){
  override fun onResume(){super.onResume();try{Store.reconcileAlarms(this)}catch(e:Exception){android.util.Log.e("TimeIkizAlarm","Resume alarm reconciliation failed",e)};refreshTask?.let{handler.removeCallbacks(it)};val tick=object:Runnable{override fun run(){render();handler.postDelayed(this,500)}};refreshTask=tick;handler.post(tick)}
  override fun onPause(){refreshTask?.let{handler.removeCallbacks(it)};refreshTask=null;super.onPause()}
 
+ private fun startLanService(){
+  try{startForegroundService(Intent(this,LanForegroundService::class.java))}
+  catch(e:Exception){Toast.makeText(this,"Wi-Fi alımı başlatılamadı: "+(e.message?:""),Toast.LENGTH_LONG).show()}
+ }
  private fun lanPairDialog(){
   try{startActivityForResult(Intent(Intent.ACTION_PICK,android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI),44)}
   catch(e:Exception){Toast.makeText(this,"Rehber açılamadı",Toast.LENGTH_LONG).show()}
@@ -108,7 +112,7 @@ class MainActivity:Activity(){
   AlertDialog.Builder(this).setTitle("$contact için yakındaki Time-ikiz cihazı").setItems(names){_,which->
    val chosen=found[which]
    Thread{
-    val message=try{if(PairHandshake.request(this,chosen.second))"Eşleştirme onaylandı; hatırlatma gönderebilirsiniz" else "Eşleştirme onaylanmadı veya zaman aşımına uğradı"}
+    val message=try{if(PairHandshake.request(this,chosen.second)){runOnUiThread{startLanService()};"Eşleştirme onaylandı; hatırlatma gönderebilirsiniz"} else "Eşleştirme onaylanmadı veya zaman aşımına uğradı"}
     catch(e:Exception){"Eşleştirme başarısız: "+(e.message?:"Bağlantı sorunu")}
     runOnUiThread{Toast.makeText(this,message,Toast.LENGTH_LONG).show()}
    }.start()
