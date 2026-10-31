@@ -49,6 +49,8 @@ check(src/"PairHandshake.kt", "RSA/ECB/OAEPWithSHA-256AndMGF1Padding", "Encrypte
 check(src/"MainActivity.kt", "PairHandshake.request(", "Automatic pairing initiation missing")
 check(src/"LanTransfer.kt", "fun confirmPair(", "Reciprocal LAN confirmation missing")
 check(src/"PairHandshake.kt", "LanTransfer.confirmPair(", "Handshake does not confirm both devices")
+check(src/"LanForegroundService.kt", "startForeground(", "LAN foreground service missing")
+check(src/"MainActivity.kt", "startLanService()", "LAN foreground service not wired")
 if errors:
     for error in errors:
         print("FAIL:", error, file=sys.stderr)
