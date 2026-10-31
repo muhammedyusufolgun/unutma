@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 
 root = Path(__file__).resolve().parents[1]
 src = root / "app/src/main/java/com/olgun/unutma"
-required = ["LanTransfer.kt", "InternetMessaging.kt", "MessageSyncWorker.kt", "Store.kt",
+required = ["LanTransfer.kt", "LanDiscovery.kt", "InternetMessaging.kt", "MessageSyncWorker.kt", "Store.kt",
             "Alarms.kt", "MainActivity.kt", "ReminderWidget.kt", "SpeechService.kt"]
 errors = []
 for name in required:
@@ -42,6 +42,8 @@ if "android.permission.RECEIVE_SMS" in (root/"app/src/main/AndroidManifest.xml")
 check(src/"LanTransfer.kt", "AES/GCM/NoPadding", "Missing authenticated LAN encryption")
 check(src/"MainActivity.kt", "LanTransfer.start(this)", "LAN listener not connected")
 check(src/"MainActivity.kt", "LanTransfer.send(this,r)", "LAN send not connected")
+check(src/"LanDiscovery.kt", "discoverServices(", "NSD discovery missing")
+check(src/"MainActivity.kt", "selectNearby(", "Contact-based nearby pairing missing")
 if errors:
     for error in errors:
         print("FAIL:", error, file=sys.stderr)
