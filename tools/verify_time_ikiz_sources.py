@@ -27,6 +27,11 @@ check(src/"MessageSyncWorker.kt", "InternetMessaging.sync(", "Worker not connect
 check(root/"app/build.gradle.kts", "androidx.work:work-runtime-ktx", "WorkManager dependency missing")
 check(root/"app/build.gradle.kts", "org.bouncycastle:bcprov", "Ed25519 dependency missing")
 check(root/"app/src/main/AndroidManifest.xml", "android.permission.INTERNET", "Internet permission missing")
+# Guard against canceling a scheduled alarm before an edited reminder is durable.
+activity = (src / "MainActivity.kt").read_text(encoding="utf-8")
+save_pos = activity.find("Store.save(this,items);Alarms.cancel(this,id);Alarms.plan(this,r);")
+if save_pos < 0:
+    errors.append("Reminder edit must persist before canceling/replanning its alarm")
 if errors:
     for error in errors:
         print("FAIL:", error, file=sys.stderr)
