@@ -58,7 +58,7 @@ class MainActivity:Activity(){
    actions.addView(button("Durdur",0xffe2e2e2.toInt()).apply{setOnClickListener{(getSystemService(VIBRATOR_SERVICE) as android.os.Vibrator).vibrate(android.os.VibrationEffect.createOneShot(100,android.os.VibrationEffect.DEFAULT_AMPLITUDE));startService(Intent(this@MainActivity,SpeechService::class.java).setAction(SpeechService.STOP));render()}},LinearLayout.LayoutParams(0,dp(46),1f))
   }
  }
- override fun onResume(){super.onResume();refreshTask?.let{handler.removeCallbacks(it)};val tick=object:Runnable{override fun run(){render();handler.postDelayed(this,500)}};refreshTask=tick;handler.post(tick)}
+ override fun onResume(){super.onResume();try{Store.reconcileAlarms(this)}catch(e:Exception){android.util.Log.e("TimeIkizAlarm","Resume alarm reconciliation failed",e)};refreshTask?.let{handler.removeCallbacks(it)};val tick=object:Runnable{override fun run(){render();handler.postDelayed(this,500)}};refreshTask=tick;handler.post(tick)}
  override fun onPause(){refreshTask?.let{handler.removeCallbacks(it)};refreshTask=null;super.onPause()}
 
  private fun ask(title:String,hint:String,action:(String)->Unit){
