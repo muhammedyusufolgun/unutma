@@ -27,7 +27,7 @@ class TrustedSmsReceiver:BroadcastReceiver(){
    val at=uri.getQueryParameter("at")?.toLongOrNull()?:return
    val repeat=uri.getQueryParameter("repeat")=="true"
    val msg=uri.getQueryParameter("text")?:return
-   if(msg.isBlank()||msg.length>20000||at<=0||(!repeat&&at<=System.currentTimeMillis()))return
+   if(msg.isBlank()||msg.length>1500||at<=0||(!repeat&&at<=System.currentTimeMillis()))return
    val fingerprint=java.security.MessageDigest.getInstance("SHA-256")
     .digest((normalized+"|"+at+"|"+repeat+"|"+msg).toByteArray())
     .joinToString(""){"%02x".format(it)}
