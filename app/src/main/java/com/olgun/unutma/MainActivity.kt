@@ -140,6 +140,7 @@ class MainActivity:Activity(){
     val payload=android.net.Uri.Builder().scheme("timeikiz").authority("reminder")
      .appendQueryParameter("at",r.time.toString()).appendQueryParameter("repeat",r.repeat.toString())
      .appendQueryParameter("text",r.text).build().toString()
+    if(payload.length>1200){Toast.makeText(this,"SMS bağlantısı çok uzun; mesajı kısaltın",Toast.LENGTH_LONG).show();return}
     val sms=Intent(Intent.ACTION_SENDTO,android.net.Uri.parse("smsto:"+android.net.Uri.encode(phone)))
     sms.putExtra("sms_body","Time-ikiz hatırlatması: "+payload+"\nAlıcı bu numarayı güvenilir olarak eklediyse hatırlatma otomatik kaydedilir.")
     startActivity(sms)
