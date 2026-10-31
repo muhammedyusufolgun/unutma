@@ -54,7 +54,7 @@ class MainActivity:Activity(){
  done=button("Tamam",0xffdddddd.toInt());done.visibility=View.GONE;root.addView(done,LinearLayout.LayoutParams(-1,dp(48)));input.addTextChangedListener(object:android.text.TextWatcher{override fun beforeTextChanged(s:CharSequence?,a:Int,c:Int,f:Int){};override fun onTextChanged(s:CharSequence?,st:Int,b:Int,count:Int){done.visibility=if(s.isNullOrBlank())View.GONE else View.VISIBLE};override fun afterTextChanged(s:android.text.Editable?) {}})
  done.setOnClickListener{save()};root.addView(button("Kaydet ve İlet",0xffd9edf9.toInt()).apply{setOnClickListener{save()?.let{sendDialog(it)}}},LinearLayout.LayoutParams(-1,dp(48)));root.addView(button("Yeni Ekle",0xffb9efb7.toInt()).apply{setOnClickListener{editing=null;date.text.clear();time.text.clear();input.text.clear();dateChosen=false;timeChosen=false;input.requestFocus();(getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(input,InputMethodManager.SHOW_IMPLICIT)}},LinearLayout.LayoutParams(-1,dp(52)))
  
- root.addView(button("Güvenilir kişi seç (otomatik alım)",0xffc8e6ff.toInt()).apply{setOnClickListener{startActivityForResult(Intent(Intent.ACTION_PICK,android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI),43)}},LinearLayout.LayoutParams(-1,dp(48)))
+
   list=LinearLayout(this).apply{orientation=1};root.addView(list);root.addView(Space(this),LinearLayout.LayoutParams(1,dp(28)));root.addView(TextView(this).apply{text="Muhammed Yusuf OLGUN";gravity=Gravity.CENTER;textSize=12f;setTextColor(0xffaaaaaa.toInt())},LinearLayout.LayoutParams(-1,dp(35)));render()}
  private fun save():Reminder?{try{val dateRaw=date.text.toString().trim();val repeat=dateRaw.isEmpty();val d=if(repeat)Date() else {require(dateRaw.matches(Regex("\\d{2}\\.\\d{2}\\.\\d{4}"))){"Tarih GG.AA.YYYY olmalı"};fmt.apply{isLenient=false}.parse(dateRaw)?:throw Exception("Geçersiz tarih")};val raw=time.text.toString().trim();require(raw.matches(Regex("([01]\\d|2[0-3]):[0-5]\\d"))){"Saat SS:DD biçiminde olmalı"};require(input.text.toString().isNotBlank()){"Sesli mesaj boş olamaz"};val hm=raw;val t=clock.apply{isLenient=false}.parse(hm)?:throw Exception("Geçersiz saat");val cal=Calendar.getInstance().apply{time=d};val tc=Calendar.getInstance().apply{time=t};cal.set(Calendar.HOUR_OF_DAY,tc.get(Calendar.HOUR_OF_DAY));cal.set(Calendar.MINUTE,tc.get(Calendar.MINUTE));cal.set(Calendar.SECOND,0);cal.set(Calendar.MILLISECOND,0);if(!repeat && cal.timeInMillis<=System.currentTimeMillis())throw IllegalArgumentException("Gelecekte bir tarih ve saat girin")
  val items=Store.all(this).toMutableList();val id=editing?:((items.maxOfOrNull{it.id}?:0)+1);require(id>0){"Hatırlatma kimliği geçersiz"};if(editing!=null)require(items.any{it.id==id}){"Düzenlenecek hatırlatma bulunamadı"};items.removeAll{it.id==id};val r=Reminder(id,cal.timeInMillis,input.text.toString().trim(),repeat);items.add(r);Store.save(this,items);Alarms.cancel(this,id);Alarms.plan(this,r);editing=null;date.text.clear();time.text.clear();input.text.clear();(getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(input.windowToken,0);input.clearFocus();render();Toast.makeText(this,"Mesaj kaydedildi",Toast.LENGTH_SHORT).show();return r
@@ -115,19 +115,6 @@ class MainActivity:Activity(){
  }
  override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?){
   super.onActivityResult(requestCode,resultCode,data)
-  if(requestCode==43&&resultCode==RESULT_OK){
-   val uri=data?.data?:return
-   contentResolver.query(uri,arrayOf(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER),null,null,null)?.use{cur->
-    if(cur.moveToFirst()){
-     val number=cur.getString(0).filter{it.isDigit()}.takeLast(10)
-     if(number.length==10){
-      getSharedPreferences("trusted_sms",MODE_PRIVATE).edit().putBoolean(number,true).apply()
-      Toast.makeText(this,"Kişi güvenilir olarak eklendi; gelen hatırlatmaları otomatik kaydedilecek",Toast.LENGTH_LONG).show()
-     }
-    }
-   }
-   return
-  }
   if(requestCode!=42||resultCode!=RESULT_OK)return
   val r=pendingShare?:return
   pendingShare=null
@@ -142,13 +129,12 @@ class MainActivity:Activity(){
      .appendQueryParameter("text",r.text).build().toString()
     if(payload.length>1200){Toast.makeText(this,"SMS bağlantısı çok uzun; mesajı kısaltın",Toast.LENGTH_LONG).show();return}
     val sms=Intent(Intent.ACTION_SENDTO,android.net.Uri.parse("smsto:"+android.net.Uri.encode(phone)))
-    sms.putExtra("sms_body","Time-ikiz hatırlatması: "+payload+"\nAlıcı bu numarayı güvenilir olarak eklediyse hatırlatma otomatik kaydedilir.")
+    sms.putExtra("sms_body","Time-ikiz hatırlatması: "+payload+"\nAlıcı Time-ikiz bağlantısını açıp kaydı onaylamalıdır.")
     startActivity(sms)
    }
   }catch(e:Exception){Toast.makeText(this,"İletim başlatılamadı: "+e.message,Toast.LENGTH_LONG).show()}
  }
- private fun checkPermissions(){if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(android.Manifest.permission.RECEIVE_SMS)!=android.content.pm.PackageManager.PERMISSION_GRANTED)requestPermissions(arrayOf(android.Manifest.permission.RECEIVE_SMS),11)
- if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED)requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),10)
+ private fun checkPermissions(){if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED)requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),10)
  if(Build.VERSION.SDK_INT>=31 && !getSystemService(AlarmManager::class.java).canScheduleExactAlarms())AlertDialog.Builder(this).setMessage("Hatırlatmaların zamanında çalışması için kesin alarm iznini etkinleştirin.").setPositiveButton("Ayarlar"){_,_->startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))}.setNegativeButton("Sonra",null).show()
  // SpeechService owns and releases the TTS engine when an alarm fires.
  }
