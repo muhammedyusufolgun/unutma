@@ -1,7 +1,7 @@
-name: Unutma APK Derle
+name: Time-ikiz APK Build (pilot)
 on:
   push:
-    branches: [main]
+    branches: [feature/ilet-e2ee-pilot]
   workflow_dispatch:
 jobs:
   build:
@@ -10,11 +10,17 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+      - name: Require actual Time-ikiz sources
+        run: |
+          test -f app/src/main/java/com/olgun/unutma/InternetMessaging.kt || { echo "::error::Time-ikiz Android messaging sources not committed"; exit 1; }
+          test -f app/src/main/java/com/olgun/unutma/MessageSyncWorker.kt || { echo "::error::Background worker not committed"; exit 1; }
+          grep -q 'org.bouncycastle:bcprov' app/build.gradle.kts || { echo "::error::Signing dependency missing"; exit 1; }
+          grep -q 'androidx.work:work-runtime' app/build.gradle.kts || { echo "::error::Background sync dependency missing"; exit 1; }
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - name: Android SDK paketlerini kur
+      - name: Install Android SDK
         run: |
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           if [ ! -x "$SDKMANAGER" ]; then
@@ -26,13 +32,14 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Debug APK oluştur
-        run: gradle --no-daemon assembleDebug
-      - name: Unutma.apk olarak hazırla
+      - name: Build debug APK
+        run: gradle --no-daemon --stacktrace assembleDebug
+      - name: Name APK
         run: |
           mkdir -p output
-          cp app/build/outputs/apk/debug/app-debug.apk output/Unutma.apk
+          cp app/build/outputs/apk/debug/app-debug.apk output/Time-ikiz.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: Unutma-APK
-          path: output/Unutma.apk
+          name: Time-ikiz-APK
+          path: output/Time-ikiz.apk
+          if-no-files-found: error
