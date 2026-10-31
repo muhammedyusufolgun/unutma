@@ -7,4 +7,5 @@ android { namespace = "com.olgun.unutma"; compileSdk = 35
 dependencies {
  implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
  implementation("androidx.work:work-runtime-ktx:2.9.1")
+ implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }
