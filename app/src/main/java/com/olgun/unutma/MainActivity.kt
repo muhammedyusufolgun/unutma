@@ -20,9 +20,9 @@ class MainActivity:Activity(){
  private fun blackOutline():android.graphics.drawable.GradientDrawable=android.graphics.drawable.GradientDrawable().apply{setColor(Color.WHITE);setCornerRadius(dp(6).toFloat());setStroke(dp(1),Color.BLACK)}
  private fun redOutline():android.graphics.drawable.GradientDrawable=android.graphics.drawable.GradientDrawable().apply{setColor(Color.WHITE);setCornerRadius(dp(6).toFloat());setStroke(dp(1),Color.rgb(220,55,55))}
  private fun button(label:String,color:Int):Button=Button(this).apply{text=label;setTextColor(Color.BLACK);setAllCaps(false);setBackgroundTintList(android.content.res.ColorStateList.valueOf(color))}
- override fun onCreate(b:Bundle?){super.onCreate(b);window.statusBarColor=Color.rgb(244,246,248);window.decorView.systemUiVisibility=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);show();checkPermissions()}
+ override fun onCreate(b:Bundle?){super.onCreate(b);window.statusBarColor=Color.rgb(244,246,248);window.decorView.systemUiVisibility=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);show();checkPermissions();try{Store.reconcileAlarms(this);MessageSyncScheduler.schedule(this)}catch(e:Exception){android.util.Log.e("TimeIkiz", "Recovery failed", e)}}
  private fun show(){val scroll=ScrollView(this);scroll.isFillViewport=true;var pullStart=0f;scroll.setOnTouchListener{v,event->when(event.actionMasked){android.view.MotionEvent.ACTION_DOWN->pullStart=event.y;android.view.MotionEvent.ACTION_UP->if(scroll.scrollY==0 && event.y-pullStart>dp(75))render()};false};root=LinearLayout(this).apply{orientation=1;setPadding(dp(16),dp(38),dp(16),dp(12));setBackgroundColor(Color.rgb(248,250,252))};scroll.addView(root);setContentView(scroll)
- root.addView(TextView(this).apply{text="Zamanlı Sesli Mesaj";textSize=23f;setTextColor(Color.BLACK);gravity=Gravity.CENTER;setTypeface(null,1);setPadding(0,0,0,dp(20))})
+ root.addView(TextView(this).apply{text="Time-ikiz • Zamanlı Sesli Mesaj";textSize=23f;setTextColor(Color.BLACK);gravity=Gravity.CENTER;setTypeface(null,1);setPadding(0,0,0,dp(20))})
  val row=LinearLayout(this).apply{orientation=0};root.addView(row)
  date=EditText(this).apply{hint="Tarih: GG.AA.YYYY";setSingleLine(true);inputType=android.text.InputType.TYPE_CLASS_DATETIME or android.text.InputType.TYPE_DATETIME_VARIATION_DATE};time=EditText(this).apply{hint="Saat: SS:DD (isteğe bağlı)";setSingleLine(true);inputType=android.text.InputType.TYPE_CLASS_DATETIME or android.text.InputType.TYPE_DATETIME_VARIATION_TIME}
  date.background=blackOutline();time.background=blackOutline();date.setPadding(dp(8),0,dp(8),0);time.setPadding(dp(8),0,dp(8),0)
@@ -33,6 +33,7 @@ class MainActivity:Activity(){
  input=EditText(this).apply{hint="Sesli okunacak mesajı yazın";minLines=2;gravity=Gravity.TOP;setTextColor(Color.BLACK);setTypeface(null,android.graphics.Typeface.BOLD);inputType=android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE};root.addView(input,LinearLayout.LayoutParams(-1,-2))
  done=button("Tamam",0xffdddddd.toInt());done.visibility=View.GONE;root.addView(done,LinearLayout.LayoutParams(-1,dp(48)));input.addTextChangedListener(object:android.text.TextWatcher{override fun beforeTextChanged(s:CharSequence?,a:Int,c:Int,f:Int){};override fun onTextChanged(s:CharSequence?,st:Int,b:Int,count:Int){done.visibility=if(s.isNullOrBlank())View.GONE else View.VISIBLE};override fun afterTextChanged(s:android.text.Editable?) {}})
  done.setOnClickListener{save()};root.addView(button("Yeni Ekle",0xffb9efb7.toInt()).apply{setOnClickListener{editing=null;date.text.clear();time.text.clear();input.text.clear();dateChosen=false;timeChosen=false;input.requestFocus();(getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(input,InputMethodManager.SHOW_IMPLICIT)}},LinearLayout.LayoutParams(-1,dp(52)))
+ root.addView(button("İnternet Mesajlaşma",0xffd9edf9.toInt()).apply{setOnClickListener{messagingDialog()}},LinearLayout.LayoutParams(-1,dp(48)))
  list=LinearLayout(this).apply{orientation=1};root.addView(list);root.addView(Space(this),LinearLayout.LayoutParams(1,dp(28)));root.addView(TextView(this).apply{text="Muhammed Yusuf OLGUN";gravity=Gravity.CENTER;textSize=12f;setTextColor(0xffaaaaaa.toInt())},LinearLayout.LayoutParams(-1,dp(35)));render()}
  private fun save(){try{val dateRaw=date.text.toString().trim();val repeat=dateRaw.isEmpty();val d=if(repeat)Date() else fmt.parse(dateRaw)?:throw Exception("Tarih GG.AA.YYYY olmalı");val raw=time.text.toString().trim();if(raw.isEmpty())throw Exception("Saat seçin");val hm=raw;val t=clock.parse(hm)?:throw Exception();val cal=Calendar.getInstance().apply{time=d};val tc=Calendar.getInstance().apply{time=t};cal.set(Calendar.HOUR_OF_DAY,tc.get(Calendar.HOUR_OF_DAY));cal.set(Calendar.MINUTE,tc.get(Calendar.MINUTE));cal.set(Calendar.SECOND,0);cal.set(Calendar.MILLISECOND,0);if(!repeat && cal.timeInMillis<=System.currentTimeMillis())throw IllegalArgumentException("Gelecekte bir tarih ve saat girin")
  val items=Store.all(this).toMutableList();val id=editing?:((items.maxOfOrNull{it.id}?:0)+1);Alarms.cancel(this,id);items.removeAll{it.id==id};val r=Reminder(id,cal.timeInMillis,input.text.toString().trim(),repeat);items.add(r);Store.save(this,items);Alarms.plan(this,r);editing=null;date.text.clear();time.text.clear();input.text.clear();(getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(input.windowToken,0);input.clearFocus();render();Toast.makeText(this,"Mesaj kaydedildi",Toast.LENGTH_SHORT).show()
@@ -54,11 +55,39 @@ class MainActivity:Activity(){
    val actions=LinearLayout(this).apply{orientation=0};panel.addView(actions)
    actions.addView(button("Düzenle",0xffffef9b.toInt()).apply{setOnClickListener{editing=r.id;date.setText(if(r.repeat)"" else fmt.format(r.time));time.setText(clock.format(r.time));input.setText(r.text);input.requestFocus();(getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(input,InputMethodManager.SHOW_IMPLICIT)}},LinearLayout.LayoutParams(0,dp(46),1f))
    actions.addView(button("Sil",0xffffb8b8.toInt()).apply{setOnClickListener{AlertDialog.Builder(this@MainActivity).setMessage("Mesaj silinsin mi?").setPositiveButton("Sil"){_,_->Alarms.cancel(this@MainActivity,r.id);Store.save(this@MainActivity,Store.all(this@MainActivity).filterNot{it.id==r.id});render()}.setNegativeButton("Vazgeç",null).show()}},LinearLayout.LayoutParams(0,dp(46),1f))
+   actions.addView(button("İlet",0xffd9edf9.toInt()).apply{setOnClickListener{sendDialog(r)}},LinearLayout.LayoutParams(0,dp(46),1f))
    actions.addView(button("Durdur",0xffe2e2e2.toInt()).apply{setOnClickListener{(getSystemService(VIBRATOR_SERVICE) as android.os.Vibrator).vibrate(android.os.VibrationEffect.createOneShot(100,android.os.VibrationEffect.DEFAULT_AMPLITUDE));startService(Intent(this@MainActivity,SpeechService::class.java).setAction(SpeechService.STOP));render()}},LinearLayout.LayoutParams(0,dp(46),1f))
   }
  }
  override fun onResume(){super.onResume();refreshTask?.let{handler.removeCallbacks(it)};val tick=object:Runnable{override fun run(){render();handler.postDelayed(this,500)}};refreshTask=tick;handler.post(tick)}
  override fun onPause(){refreshTask?.let{handler.removeCallbacks(it)};refreshTask=null;super.onPause()}
+
+ private fun ask(title:String,hint:String,action:(String)->Unit){
+  val field=EditText(this).apply{setSingleLine(true);setText(hint)}
+  AlertDialog.Builder(this).setTitle(title).setView(field).setPositiveButton("Tamam"){_,_->action(field.text.toString().trim())}.setNegativeButton("Vazgeç",null).show()
+ }
+ private fun background(task:()->String){
+  Thread {
+   val result=try{task()}catch(e:Exception){"Hata: "+(e.message?:"İşlem başarısız")}
+   runOnUiThread{Toast.makeText(this,result,Toast.LENGTH_LONG).show();try{render()}catch(_:Exception){}}
+  }.start()
+ }
+ private fun messagingDialog(){
+  val options=arrayOf("Sunucu ve kimlik kaydı","Kişi Ekle","Kişi Sil","Gelen mesajları kontrol et","Kimliğim: "+InternetMessaging.myId(this),"Şifreleme anahtarımın parmak izi","Kişinin şifreleme anahtarını doğrula","İmza anahtarımın parmak izi","Kişinin imza anahtarını doğrula")
+  AlertDialog.Builder(this).setTitle("İnternet Mesajlaşma").setItems(options){_,which->when(which){
+   0->ask("HTTPS sunucu adresi","https://sunucu.example"){url->ask("Benzersiz kullanıcı kimliği",""){id->background{InternetMessaging.register(this,url,id);MessageSyncScheduler.schedule(this);"Kayıt tamamlandı"}}}
+   1->ask("Kişi Ekle",""){peer->background{InternetMessaging.add(this,peer);"Kişi eklendi. Karşı taraf da eklemeli."}}
+   2->ask("Kişi Sil",""){peer->background{InternetMessaging.delete(this,peer);"Kişi silindi"}}
+   3->background{"${InternetMessaging.sync(this)} yeni mesaj alındı"}
+   5->background{"Şifreleme SHA-256: "+InternetMessaging.myFingerprint()}
+   6->ask("Doğrulanacak kişi",""){peer->ask("64 haneli SHA-256 parmak izi",""){fp->background{InternetMessaging.trustPeer(this,peer,fp);"Şifreleme anahtarı doğrulandı"}}}
+   7->background{"İmza SHA-256: "+InternetMessaging.mySigningFingerprint(this)}
+   8->ask("İmza anahtarı doğrulanacak kişi",""){peer->ask("64 haneli SHA-256 parmak izi",""){fp->background{InternetMessaging.trustSigningPeer(this,peer,fp);"İmza anahtarı doğrulandı"}}}
+  }}.show()
+ }
+ private fun sendDialog(r:Reminder){
+  ask("Hatırlatmayı İlet — alıcı kimliği",""){peer->background{InternetMessaging.send(this,peer,r);"Şifreli mesaj gönderildi"}}
+ }
  private fun checkPermissions(){if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED)requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),10)
  if(Build.VERSION.SDK_INT>=31 && !getSystemService(AlarmManager::class.java).canScheduleExactAlarms())AlertDialog.Builder(this).setMessage("Hatırlatmaların zamanında çalışması için kesin alarm iznini etkinleştirin.").setPositiveButton("Ayarlar"){_,_->startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))}.setNegativeButton("Sonra",null).show()
  val tts=TextToSpeech(this){status->if(status==TextToSpeech.SUCCESS){ /* device engine initializes asynchronously */ }}
