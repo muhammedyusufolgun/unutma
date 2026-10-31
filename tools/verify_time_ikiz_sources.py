@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 
 root = Path(__file__).resolve().parents[1]
 src = root / "app/src/main/java/com/olgun/unutma"
-required = ["InternetMessaging.kt", "MessageSyncWorker.kt", "Store.kt",
+required = ["TrustedSmsReceiver.kt", "InternetMessaging.kt", "MessageSyncWorker.kt", "Store.kt",
             "Alarms.kt", "MainActivity.kt", "ReminderWidget.kt", "SpeechService.kt"]
 errors = []
 for name in required:
@@ -35,6 +35,12 @@ if save_pos < 0:
 check(src/"InternetMessaging.kt", "Inbox item $i failed; retry on next sync", "Inbox failure isolation missing")
 check(src/"MainActivity.kt", "Sesli mesaj boş olamaz", "Empty reminder text validation missing")
 check(src/"MainActivity.kt", "isLenient=false", "Strict reminder date/time parsing missing")
+check(src/"TrustedSmsReceiver.kt", "Store.addIncomingAtomic(", "Trusted SMS atomic persistence missing")
+check(src/"MainActivity.kt", "Güvenilir kişi seç (otomatik alım)", "Trusted contact selection missing")
+check(src/"MainActivity.kt", "Kaydet ve İlet", "New reminder share action missing")
+check(root/"app/src/main/AndroidManifest.xml", "android.permission.RECEIVE_SMS", "SMS permission missing")
+check(root/"app/src/main/AndroidManifest.xml", ".TrustedSmsReceiver", "SMS receiver missing")
+check(root/"app/build.gradle.kts", 'applicationId = "com.olgun.timeikiz"', "Distinct Time-ikiz application ID missing")
 if errors:
     for error in errors:
         print("FAIL:", error, file=sys.stderr)
