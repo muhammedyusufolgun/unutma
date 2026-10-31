@@ -63,7 +63,7 @@ class MainActivity:Activity(){
  val pick=LinearLayout(this);root.addView(pick);pick.addView(button("Tarih seç",0xffeeeeee.toInt()).apply{backgroundTintList=null;background=redOutline();setOnClickListener{val c=Calendar.getInstance();DatePickerDialog(this@MainActivity,{_,y,m,d->date.setText("%02d.%02d.%04d".format(d,m+1,y));dateChosen=true},c.get(Calendar.YEAR),c.get(Calendar.MONTH),c.get(Calendar.DAY_OF_MONTH)).show()}},LinearLayout.LayoutParams(0,dp(45),1f));pick.addView(button("Tarihi kaldır",0xffeeeeee.toInt()).apply{backgroundTintList=null;background=blackOutline();setOnClickListener{date.text.clear()}},LinearLayout.LayoutParams(0,dp(45),1f));pick.addView(button("Saat seç",0xffeeeeee.toInt()).apply{backgroundTintList=null;background=redOutline();setOnClickListener{val c=Calendar.getInstance();TimePickerDialog(this@MainActivity,{_,h,m->time.setText("%02d:%02d".format(h,m));timeChosen=true},c.get(Calendar.HOUR_OF_DAY),c.get(Calendar.MINUTE),true).show()}},LinearLayout.LayoutParams(0,dp(45),1f))
  input=EditText(this).apply{hint="Sesli okunacak mesajı yazın";minLines=2;gravity=Gravity.TOP;setTextColor(Color.BLACK);setTypeface(null,android.graphics.Typeface.BOLD);inputType=android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE};root.addView(input,LinearLayout.LayoutParams(-1,-2))
  done=button("Tamam",0xffdddddd.toInt());done.visibility=View.GONE;root.addView(done,LinearLayout.LayoutParams(-1,dp(48)));input.addTextChangedListener(object:android.text.TextWatcher{override fun beforeTextChanged(s:CharSequence?,a:Int,c:Int,f:Int){};override fun onTextChanged(s:CharSequence?,st:Int,b:Int,count:Int){done.visibility=if(s.isNullOrBlank())View.GONE else View.VISIBLE};override fun afterTextChanged(s:android.text.Editable?) {}})
- done.setOnClickListener{save()};root.addView(button("Kaydet ve İlet",0xffd9edf9.toInt()).apply{setOnClickListener{save()?.let{sendDialog(it)}}},LinearLayout.LayoutParams(-1,dp(48)));root.addView(button("Yeni Ekle",0xffb9efb7.toInt()).apply{setOnClickListener{editing=null;date.text.clear();time.text.clear();input.text.clear();dateChosen=false;timeChosen=false;input.requestFocus();(getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(input,InputMethodManager.SHOW_IMPLICIT)}},LinearLayout.LayoutParams(-1,dp(52)))
+ done.setOnClickListener{save()};root.addView(button("Yeni Ekle",0xffb9efb7.toInt()).apply{setOnClickListener{editing=null;date.text.clear();time.text.clear();input.text.clear();dateChosen=false;timeChosen=false;input.requestFocus();(getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(input,InputMethodManager.SHOW_IMPLICIT)}},LinearLayout.LayoutParams(-1,dp(52)))
  
 
   root.addView(button("Rehberden kişi ekle ve eşleştir",0xffc8e6ff.toInt()).apply{setOnClickListener{lanPairDialog()}},LinearLayout.LayoutParams(-1,dp(48)))
@@ -125,10 +125,7 @@ class MainActivity:Activity(){
    return
   }
 
-  pendingShare=r
-  try{
-   startActivityForResult(Intent(Intent.ACTION_PICK,android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI),42)
-  }catch(e:Exception){Toast.makeText(this,"Telefon rehberi açılamadı",Toast.LENGTH_LONG).show()}
+  Toast.makeText(this,"Önce rehberden bir kişiyi aynı Wi-Fi ağında eşleştirin",Toast.LENGTH_LONG).show()
  }
  override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?){
   super.onActivityResult(requestCode,resultCode,data)
@@ -137,24 +134,7 @@ class MainActivity:Activity(){
    contentResolver.query(uri,arrayOf(android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME),null,null,null)?.use{cursor->if(cursor.moveToFirst())selectNearby(cursor.getString(0)?: "Seçilen kişi")}
    return
   }
-  if(requestCode!=42||resultCode!=RESULT_OK)return
-  val r=pendingShare?:return
-  pendingShare=null
-  val uri=data?.data?:return
-  try{
-   contentResolver.query(uri,arrayOf(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER),null,null,null)?.use{cursor->
-    if(!cursor.moveToFirst())return
-    val phone=cursor.getString(0)
-    if(r.text.length>1500){Toast.makeText(this,"SMS iletimi için mesaj en fazla 1500 karakter olmalı",Toast.LENGTH_LONG).show();return}
-    val payload=android.net.Uri.Builder().scheme("timeikiz").authority("reminder")
-     .appendQueryParameter("at",r.time.toString()).appendQueryParameter("repeat",r.repeat.toString())
-     .appendQueryParameter("text",r.text).build().toString()
-    if(payload.length>1200){Toast.makeText(this,"SMS bağlantısı çok uzun; mesajı kısaltın",Toast.LENGTH_LONG).show();return}
-    val sms=Intent(Intent.ACTION_SENDTO,android.net.Uri.parse("smsto:"+android.net.Uri.encode(phone)))
-    sms.putExtra("sms_body","Time-ikiz hatırlatması: "+payload+"\nAlıcı Time-ikiz bağlantısını açıp kaydı onaylamalıdır.")
-    startActivity(sms)
-   }
-  }catch(e:Exception){Toast.makeText(this,"İletim başlatılamadı: "+e.message,Toast.LENGTH_LONG).show()}
+
  }
  private fun checkPermissions(){if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED)requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),10)
  if(Build.VERSION.SDK_INT>=31 && !getSystemService(AlarmManager::class.java).canScheduleExactAlarms())AlertDialog.Builder(this).setMessage("Hatırlatmaların zamanında çalışması için kesin alarm iznini etkinleştirin.").setPositiveButton("Ayarlar"){_,_->startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))}.setNegativeButton("Sonra",null).show()
