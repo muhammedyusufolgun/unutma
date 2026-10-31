@@ -59,6 +59,7 @@ object LanTransfer {
    }catch(e:Exception){Log.w("TimeIkizLAN","Cannot listen on Wi-Fi",e)}
   }
  }
+ @Synchronized fun stop(){try{server?.close()}catch(_:Exception){};server=null}
  private fun key(token:String)=SecretKeySpec(MessageDigest.getInstance("SHA-256").digest(("Time-ikiz LAN v2:"+token).toByteArray(Charsets.UTF_8)),"AES")
  private fun encrypt(token:String,plain:String):JSONObject {
   val cipher=Cipher.getInstance("AES/GCM/NoPadding")
