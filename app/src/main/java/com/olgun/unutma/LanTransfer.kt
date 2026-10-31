@@ -1,17 +1,19 @@
 package com.olgun.unutma
 
 import android.content.Context
-import android.net.wifi.WifiManager
 import android.util.Log
 import org.json.JSONObject
-import java.net.HttpURLConnection
 import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.net.ServerSocket
 import java.net.Socket
-import java.net.URL
 import java.security.SecureRandom
 import java.util.UUID
+import java.security.MessageDigest
+import javax.crypto.Cipher
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
+import android.util.Base64
 import java.util.concurrent.Executors
 
 /** Local Wi-Fi transport. Only use on a trusted private network; no public internet exposure. */
@@ -55,6 +57,22 @@ object LanTransfer {
    }catch(e:Exception){Log.w("TimeIkizLAN","Cannot listen on Wi-Fi",e)}
   }
  }
+ private fun key(token:String)=SecretKeySpec(MessageDigest.getInstance("SHA-256").digest(("Time-ikiz LAN v2:"+token).toByteArray(Charsets.UTF_8)),"AES")
+ private fun encrypt(token:String,plain:String):JSONObject {
+  val cipher=Cipher.getInstance("AES/GCM/NoPadding")
+  cipher.init(Cipher.ENCRYPT_MODE,key(token))
+  return JSONObject().put("v",2).put("iv",Base64.encodeToString(cipher.iv,Base64.NO_WRAP)).put("data",Base64.encodeToString(cipher.doFinal(plain.toByteArray(Charsets.UTF_8)),Base64.NO_WRAP))
+ }
+ private fun decrypt(token:String,envelope:JSONObject):JSONObject {
+  require(envelope.getInt("v")==2)
+  val iv=Base64.decode(envelope.getString("iv"),Base64.NO_WRAP)
+  require(iv.size==12)
+  val cipher=Cipher.getInstance("AES/GCM/NoPadding")
+  cipher.init(Cipher.DECRYPT_MODE,key(token),GCMParameterSpec(128,iv))
+  val ciphertext=Base64.decode(envelope.getString("data"),Base64.NO_WRAP)
+  require(ciphertext.size<=40000)
+  return JSONObject(String(cipher.doFinal(ciphertext),Charsets.UTF_8))
+ }
  private fun handle(c:Context,s:Socket){
   s.use { socket ->
    socket.soTimeout=6000
@@ -62,9 +80,7 @@ object LanTransfer {
     val reader=socket.getInputStream().bufferedReader(Charsets.UTF_8)
     val line=reader.readLine()?:return
     require(line.length<=40000)
-    val data=JSONObject(line)
-    // The recipient code is a shared capability; the sender must have received it via trusted pairing.
-    require(data.getString("code")==code(c)){"Unauthorized sender"}
+    val data=decrypt(code(c),JSONObject(line))
     val text=data.getString("text")
     val time=data.getLong("time")
     require(text.isNotBlank()&&text.length<=20000&&time>0)
@@ -81,8 +97,9 @@ object LanTransfer {
  fun send(c:Context,r:Reminder):String {
   val ip=peer(c);require(ip.isNotBlank()){"Önce alıcıyı eşleştirin"}
   val token=prefs(c).getString("peer_code",null)?:error("Eşleştirme kodu eksik")
-  val payload=JSONObject().put("code",token).put("id",UUID.randomUUID().toString())
+  val plain=JSONObject().put("id",UUID.randomUUID().toString())
    .put("time",r.time).put("repeat",r.repeat).put("text",r.text).toString()
+  val payload=encrypt(token,plain).toString()
   Socket().use { socket ->
    socket.connect(java.net.InetSocketAddress(ip,PORT),5000);socket.soTimeout=6000
    socket.getOutputStream().write((payload+"\n").toByteArray(Charsets.UTF_8))
