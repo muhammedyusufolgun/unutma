@@ -53,6 +53,9 @@ check(src/"LanForegroundService.kt", "startForeground(", "LAN foreground service
 check(src/"MainActivity.kt", "startLanService()", "LAN foreground service not wired")
 check(src/"LanForegroundService.kt", "LanTransfer.stop()", "LAN listener cleanup missing")
 check(src/"LanForegroundService.kt", "LanDiscovery.stop(", "LAN discovery cleanup missing")
+check(src/"LanForegroundService.kt", "fun enabled(", "LAN listener user preference missing")
+check(src/"MainActivity.kt", "LanForegroundService.enabled(this)", "LAN listener preference ignored on app start")
+check(src/"LanForegroundService.kt", "LanTransfer.stop()", "LAN shutdown missing")
 if errors:
     for error in errors:
         print("FAIL:", error, file=sys.stderr)
