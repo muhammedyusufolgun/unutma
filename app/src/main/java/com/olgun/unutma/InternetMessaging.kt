@@ -159,6 +159,7 @@ object InternetMessaging {
   val messages=req(c,"/inbox").getJSONArray("messages")
   var count=0
   for(i in 0 until messages.length()){
+   try {
    val m=messages.getJSONObject(i);val id=m.getString("message_id")
    val seen=c.getSharedPreferences("data",Context.MODE_PRIVATE).getBoolean("incoming_$id",false)
    if(!seen){
@@ -170,6 +171,9 @@ object InternetMessaging {
     if(reminder!=null){Alarms.plan(c,reminder);count++}
    }
    req(c,"/ack",JSONObject().put("message_id",id))
+   } catch(e:Exception) {
+    android.util.Log.e("TimeIkizSync","Inbox item $i failed; retry on next sync",e)
+   }
   }
   Store.reconcileAlarms(c)
   return count
