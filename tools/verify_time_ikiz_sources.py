@@ -35,7 +35,8 @@ if save_pos < 0:
 check(src/"InternetMessaging.kt", "Inbox item $i failed; retry on next sync", "Inbox failure isolation missing")
 check(src/"MainActivity.kt", "Sesli mesaj boş olamaz", "Empty reminder text validation missing")
 check(src/"MainActivity.kt", "isLenient=false", "Strict reminder date/time parsing missing")
-check(src/"MainActivity.kt", "Kaydet ve İlet", "New reminder share action missing")
+check(src/"MainActivity.kt", "sendDialog(r)", "Reminder send action missing")
+if "Kaydet ve İlet" in activity: errors.append("Removed Save and Send action reappeared")
 check(root/"app/build.gradle.kts", 'applicationId = "com.olgun.timeikiz"', "Distinct Time-ikiz application ID missing")
 if "android.permission.RECEIVE_SMS" in (root/"app/src/main/AndroidManifest.xml").read_text():
     errors.append("Sensitive SMS permission must not be present")
