@@ -58,6 +58,19 @@ class RelayTests(unittest.TestCase):
   self.client.post("/ack",headers=bob,json={"message_id":"msg1"})
   self.assertEqual(len(self.client.get("/inbox",headers=bob).json["messages"]),0)
 
+ def test_contacts_survive_new_database_connection(self):
+  alice=self.register("alice0001")
+  bob=self.register("bob00002")
+  response=self.client.post("/contact/add",headers=alice,json={"peer":"bob00002"})
+  self.assertEqual(response.status_code,200)
+  response=self.client.post("/contact/add",headers=bob,json={"peer":"alice0001"})
+  self.assertEqual(response.status_code,200)
+  import server
+  with server.connection() as db:
+   count=db.execute("SELECT COUNT(*) FROM contacts").fetchone()[0]
+  self.assertEqual(count,2)
+  self.assertEqual(self.client.get("/key/bob00002",headers=alice).status_code,200)
+
  def test_weak_rsa_key_rejected(self):
   key=Ed25519PrivateKey.generate()
   signing=base64.b64encode(key.public_key().public_bytes(
