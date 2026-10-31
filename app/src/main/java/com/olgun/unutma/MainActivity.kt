@@ -140,7 +140,7 @@ class MainActivity:Activity(){
      .appendQueryParameter("at",r.time.toString()).appendQueryParameter("repeat",r.repeat.toString())
      .appendQueryParameter("text",r.text).build().toString()
     val sms=Intent(Intent.ACTION_SENDTO,android.net.Uri.parse("smsto:"+android.net.Uri.encode(phone)))
-    sms.putExtra("sms_body","Time-ikiz hatırlatması: "+payload+"\nAlıcı telefonda bağlantıyı açıp hatırlatmayı onaylamalı.")
+    sms.putExtra("sms_body","Time-ikiz hatırlatması: "+payload+"\nAlıcı bu numarayı güvenilir olarak eklediyse hatırlatma otomatik kaydedilir.")
     startActivity(sms)
    }
   }catch(e:Exception){Toast.makeText(this,"İletim başlatılamadı: "+e.message,Toast.LENGTH_LONG).show()}
