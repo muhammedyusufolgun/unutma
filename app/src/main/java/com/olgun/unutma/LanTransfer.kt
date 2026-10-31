@@ -20,7 +20,8 @@ import java.net.InetSocketAddress
 /** Local Wi-Fi transport. Only use on a trusted private network; no public internet exposure. */
 object LanTransfer {
  private const val PORT = 39471
- private val pool = Executors.newCachedThreadPool()
+ private val pool = Executors.newFixedThreadPool(8)
+ private val lastPairRequest=java.util.concurrent.ConcurrentHashMap<String,Long>()
  @Volatile private var server: ServerSocket? = null
  private fun prefs(c:Context)=c.getSharedPreferences("lan_transfer",Context.MODE_PRIVATE)
  private fun code(c:Context):String {
@@ -92,6 +93,10 @@ object LanTransfer {
     require(line.length<=40000)
     val envelope=JSONObject(line)
     if(envelope.optString("type")=="pair_request"){
+     val address=socket.inetAddress.hostAddress?:return
+     val now=System.currentTimeMillis()
+     val previous=lastPairRequest.put(address,now)?:0L
+     if(now-previous<30000L)return
      val intent=android.content.Intent(c,MainActivity::class.java).apply{action="com.olgun.timeikiz.PAIR_REQUEST";addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)}
      val manager=c.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
      val channel="lan_pair_requests"
@@ -102,6 +107,7 @@ object LanTransfer {
      socket.getOutputStream().write("PENDING\n".toByteArray(Charsets.UTF_8))
      return
     }
+    require(envelope.optString("type").isEmpty())
     val data=decrypt(code(c),envelope)
     val text=data.getString("text")
     val time=data.getLong("time")
