@@ -95,6 +95,11 @@ object LanTransfer {
     if(PairHandshake.receive(c,socket,envelope))return
     require(envelope.optString("type").isEmpty())
     val data=decrypt(code(c),envelope)
+    if(data.optString("type")=="pair_confirm"){
+     pair(c,socket.inetAddress.hostAddress?:error("Missing sender IP"),data.getString("senderCode"))
+     socket.getOutputStream().write("OK\n".toByteArray(Charsets.UTF_8))
+     return
+    }
     val text=data.getString("text")
     val time=data.getLong("time")
     require(text.isNotBlank()&&text.length<=20000&&time>0)
@@ -106,6 +111,15 @@ object LanTransfer {
     Log.w("TimeIkizLAN","Rejected LAN message",e)
     try{socket.getOutputStream().write("ERROR\n".toByteArray(Charsets.UTF_8))}catch(_:Exception){}
    }
+  }
+ }
+ fun confirmPair(c:Context,ip:String,remoteCode:String):Boolean {
+  val payload=encrypt(remoteCode,JSONObject().put("type","pair_confirm").put("senderCode",code(c)).toString()).toString()
+  Socket().use{socket->
+   socket.connect(InetSocketAddress(ip,PORT),5000)
+   socket.soTimeout=6000
+   socket.getOutputStream().write((payload+"\n").toByteArray(Charsets.UTF_8))
+   return socket.getInputStream().bufferedReader(Charsets.UTF_8).readLine()=="OK"
   }
  }
  fun send(c:Context,r:Reminder):String {
