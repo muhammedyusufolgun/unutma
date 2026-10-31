@@ -13,6 +13,14 @@ object LanDiscovery {
  private var discovery: NsdManager.DiscoveryListener? = null
  private val devices=java.util.concurrent.ConcurrentHashMap<String,String>()
  fun nearby():List<Pair<String,String>> = devices.entries.map{it.key to it.value}.sortedBy{it.first}
+ @Synchronized fun stop(context:Context){
+  val manager=context.applicationContext.getSystemService(Context.NSD_SERVICE) as NsdManager
+  discovery?.let{try{manager.stopServiceDiscovery(it)}catch(_:Exception){}}
+  registration?.let{try{manager.unregisterService(it)}catch(_:Exception){}}
+  discovery=null
+  registration=null
+  devices.clear()
+ }
  @Synchronized fun discover(context:Context) {
   if(discovery!=null)return
   val manager=context.applicationContext.getSystemService(Context.NSD_SERVICE) as NsdManager
