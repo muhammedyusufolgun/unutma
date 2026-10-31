@@ -4,7 +4,6 @@ import android.content.*
 import android.graphics.Color
 import android.os.*
 import android.provider.Settings
-import android.speech.tts.TextToSpeech
 import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
@@ -90,6 +89,6 @@ class MainActivity:Activity(){
  }
  private fun checkPermissions(){if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED)requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),10)
  if(Build.VERSION.SDK_INT>=31 && !getSystemService(AlarmManager::class.java).canScheduleExactAlarms())AlertDialog.Builder(this).setMessage("Hatırlatmaların zamanında çalışması için kesin alarm iznini etkinleştirin.").setPositiveButton("Ayarlar"){_,_->startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))}.setNegativeButton("Sonra",null).show()
- val tts=TextToSpeech(this){status->if(status==TextToSpeech.SUCCESS){ /* device engine initializes asynchronously */ }}
+ // SpeechService owns and releases the TTS engine when an alarm fires.
  }
 }
