@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 
 root = Path(__file__).resolve().parents[1]
 src = root / "app/src/main/java/com/olgun/unutma"
-required = ["InternetMessaging.kt", "MessageSyncWorker.kt", "Store.kt",
+required = ["LanTransfer.kt", "InternetMessaging.kt", "MessageSyncWorker.kt", "Store.kt",
             "Alarms.kt", "MainActivity.kt", "ReminderWidget.kt", "SpeechService.kt"]
 errors = []
 for name in required:
@@ -39,6 +39,9 @@ check(src/"MainActivity.kt", "Kaydet ve İlet", "New reminder share action missi
 check(root/"app/build.gradle.kts", 'applicationId = "com.olgun.timeikiz"', "Distinct Time-ikiz application ID missing")
 if "android.permission.RECEIVE_SMS" in (root/"app/src/main/AndroidManifest.xml").read_text():
     errors.append("Sensitive SMS permission must not be present")
+check(src/"LanTransfer.kt", "AES/GCM/NoPadding", "Missing authenticated LAN encryption")
+check(src/"MainActivity.kt", "LanTransfer.start(this)", "LAN listener not connected")
+check(src/"MainActivity.kt", "LanTransfer.send(this,r)", "LAN send not connected")
 if errors:
     for error in errors:
         print("FAIL:", error, file=sys.stderr)
