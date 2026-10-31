@@ -29,6 +29,7 @@ class MainActivity:Activity(){
    .setMessage("Yakındaki bir cihaz eşleşmek istiyor. İsteği gerçekten tanıdığınız kişinin gönderdiğini doğrulayın.")
    .setPositiveButton("Onayla"){_,_->
     val accepted=PairHandshake.approve(this,id)
+    if(accepted)startLanService()
     Toast.makeText(this,if(accepted)"Eşleştirme onaylandı" else "İsteğin süresi doldu",Toast.LENGTH_LONG).show()
    }.setNegativeButton("Reddet"){_,_->PairHandshake.reject(id)}.show()
  }
