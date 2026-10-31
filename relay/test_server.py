@@ -55,5 +55,14 @@ class RelayTests(unittest.TestCase):
   self.client.post("/ack",headers=bob,json={"message_id":"msg1"})
   self.assertEqual(len(self.client.get("/inbox",headers=bob).json["messages"]),0)
 
+ def test_malformed_requests_rejected(self):
+  alice=self.register("alice0001")
+  self.assertEqual(self.client.post("/register",json={"id":None,"token":False}).status_code,400)
+  self.assertEqual(self.client.post("/contact/add",headers=alice,json={"peer":None}).status_code,400)
+  self.assertEqual(self.client.post("/send",headers=alice,json={"recipient":None,"message_id":12}).status_code,400)
+  self.assertEqual(self.client.post("/ack",headers=alice,json={"message_id":None}).status_code,400)
+  oversized="X"*(129*1024)
+  self.assertEqual(self.client.post("/send",headers=alice,data=oversized,content_type="application/json").status_code,413)
+
 if __name__=="__main__":
  unittest.main()
