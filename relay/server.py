@@ -6,6 +6,8 @@ import re
 import sqlite3
 import threading
 from flask import Flask, request, jsonify
+from cryptography.hazmat.primitives.serialization import load_der_public_key
+from cryptography.hazmat.primitives.asymmetric import rsa
 from signatures import verify
 
 app = Flask(__name__)
@@ -62,7 +64,8 @@ def mutual(db, a, b):
 
 @app.post("/register")
 def register():
-    data=request.get_json(silent=True) or {}
+    data=request.get_json(silent=True)
+    if not isinstance(data,dict):return error("Invalid JSON object",400)
     user=data.get("id","")
     token=data.get("token","")
     try:
@@ -72,6 +75,9 @@ def register():
         signing=base64.b64decode(data["signing_public_key"],validate=True)
         if len(signing)!=32 or len(pub)>2048 or len(pub)<256:
             return error("Invalid keys",400)
+        public_key=load_der_public_key(pub)
+        if not isinstance(public_key,rsa.RSAPublicKey) or public_key.key_size<3072:
+            return error("RSA public key must be at least 3072 bits",400)
         with LOCK,connection() as db:
             db.execute("INSERT INTO users(id,token,public_key,signing_public_key) VALUES(?,?,?,?)",
                        (user,token,data["public_key"],data["signing_public_key"]))
@@ -83,7 +89,8 @@ def register():
 
 @app.post("/contact/add")
 def add_contact():
-    data=request.get_json(silent=True) or {}
+    data=request.get_json(silent=True)
+    if not isinstance(data,dict):return error("Invalid JSON object",400)
     peer=data.get("peer","")
     with LOCK,connection() as db:
         user=identity(db)
@@ -120,7 +127,8 @@ def get_key(peer):
 
 @app.post("/send")
 def send():
-    data=request.get_json(silent=True) or {}
+    data=request.get_json(silent=True)
+    if not isinstance(data,dict):return error("Invalid JSON object",400)
     recipient=data.get("recipient","")
     msg=data.get("message_id","")
     ciphertext=data.get("ciphertext","")
@@ -154,7 +162,8 @@ def inbox():
 
 @app.post("/ack")
 def ack():
-    data=request.get_json(silent=True) or {}
+    data=request.get_json(silent=True)
+    if not isinstance(data,dict):return error("Invalid JSON object",400)
     msg=data.get("message_id","")
     with LOCK,connection() as db:
         user=identity(db)
