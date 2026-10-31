@@ -3,6 +3,7 @@ import os
 import tempfile
 import unittest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 from cryptography.hazmat.primitives import serialization
 from signatures import canonical
 from server import app, init_db
@@ -22,8 +23,10 @@ class RelayTests(unittest.TestCase):
   self.signers[user]=key
   signing=base64.b64encode(key.public_key().public_bytes(
    serialization.Encoding.Raw,serialization.PublicFormat.Raw)).decode()
+  rsa_key=generate_private_key(public_exponent=65537,key_size=3072)
+  rsa_public=rsa_key.public_key().public_bytes(serialization.Encoding.DER,serialization.PublicFormat.SubjectPublicKeyInfo)
   payload=dict(id=user,token=base64.b64encode((user+"X"*40).encode()).decode(),
-               public_key=base64.b64encode(b"P"*300).decode(),signing_public_key=signing)
+               public_key=base64.b64encode(rsa_public).decode(),signing_public_key=signing)
   r=self.client.post("/register",json=payload)
   self.assertEqual(r.status_code,200,r.json)
   return {"Authorization":"Bearer "+payload["token"]}
@@ -58,6 +61,8 @@ class RelayTests(unittest.TestCase):
  def test_malformed_requests_rejected(self):
   alice=self.register("alice0001")
   self.assertEqual(self.client.post("/register",json={"id":None,"token":False}).status_code,400)
+  self.assertEqual(self.client.post("/register",json=[]).status_code,400)
+  self.assertEqual(self.client.post("/contact/add",headers=alice,json=[]).status_code,400)
   self.assertEqual(self.client.post("/contact/add",headers=alice,json={"peer":None}).status_code,400)
   self.assertEqual(self.client.post("/send",headers=alice,json={"recipient":None,"message_id":12}).status_code,400)
   self.assertEqual(self.client.post("/ack",headers=alice,json={"message_id":None}).status_code,400)
