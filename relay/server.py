@@ -5,6 +5,7 @@ import os
 import re
 import sqlite3
 import threading
+from contextlib import contextmanager
 from flask import Flask, request, jsonify
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -17,11 +18,16 @@ LOCK = threading.RLock()
 ID = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
 MSG = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
 
+@contextmanager
 def connection():
     db = sqlite3.connect(DB, timeout=10)
-    db.row_factory = sqlite3.Row
-    db.execute("PRAGMA foreign_keys=ON")
-    return db
+    try:
+        db.row_factory = sqlite3.Row
+        db.execute("PRAGMA foreign_keys=ON")
+        with db:
+            yield db
+    finally:
+        db.close()
 
 def init_db():
     with LOCK, connection() as db:
