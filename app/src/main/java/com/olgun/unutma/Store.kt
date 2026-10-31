@@ -22,7 +22,7 @@ object Store {
    array.put(obj)
   }
   check(prefs.edit().putString("items",array.toString()).commit()) { "Hatırlatmalar kalıcı olarak kaydedilemedi" }
-  ReminderWidget.refresh(c)
+  try { ReminderWidget.refresh(c) } catch (e:Exception) { android.util.Log.w("TimeIkizStore","Widget refresh failed after successful save",e) }
  }
  fun addIncomingAtomic(c:Context,messageId:String,time:Long,text:String,repeat:Boolean):Reminder? = synchronized(this) {
   require(messageId.matches(Regex("[a-zA-Z0-9_-]{1,128}"))) { "Invalid message ID" }
@@ -44,7 +44,7 @@ object Store {
   check(prefs.edit().putString("items",items.toString()).putBoolean(marker,true).commit()) {
    "Incoming reminder and delivery marker could not be saved"
   }
-  ReminderWidget.refresh(c)
+  try { ReminderWidget.refresh(c) } catch (e:Exception) { android.util.Log.w("TimeIkizStore","Widget refresh failed after successful save",e) }
   reminder
  }
  fun reconcileAlarms(c:Context) {
