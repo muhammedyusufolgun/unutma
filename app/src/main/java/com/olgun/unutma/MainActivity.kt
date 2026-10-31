@@ -13,7 +13,6 @@ import java.util.*
 class MainActivity:Activity(){
  private lateinit var root:LinearLayout;private lateinit var list:LinearLayout;private lateinit var input:EditText;private lateinit var date:EditText;private lateinit var time:EditText;private lateinit var done:Button;private lateinit var mode:TextView
  private val handler=Handler(Looper.getMainLooper());private var refreshTask:Runnable?=null
- private var pendingShare:Reminder?=null
  private var editing:Int?=null;private var dateChosen=false;private var timeChosen=false
  private val fmt=SimpleDateFormat("dd.MM.yyyy",Locale("tr","TR"));private val clock=SimpleDateFormat("HH:mm",Locale("tr","TR"))
  private fun dp(v:Int)=(v*resources.displayMetrics.density).toInt()
@@ -120,7 +119,7 @@ class MainActivity:Activity(){
   }.setNegativeButton("Vazgeç",null).show()
  }
  private fun sendDialog(r:Reminder){
-  if(LanTransfer.peer(this).isNotBlank()){
+  if(LanTransfer.isPaired(this)){
    Thread{val result=try{LanTransfer.send(this,r)}catch(e:Exception){"Wi-Fi iletim hatası: "+(e.message?:"Bağlantı yok")};runOnUiThread{Toast.makeText(this,result,Toast.LENGTH_LONG).show()}}.start()
    return
   }
