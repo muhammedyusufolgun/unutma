@@ -20,7 +20,7 @@ class MainActivity:Activity(){
  private fun blackOutline():android.graphics.drawable.GradientDrawable=android.graphics.drawable.GradientDrawable().apply{setColor(Color.WHITE);setCornerRadius(dp(6).toFloat());setStroke(dp(1),Color.BLACK)}
  private fun redOutline():android.graphics.drawable.GradientDrawable=android.graphics.drawable.GradientDrawable().apply{setColor(Color.WHITE);setCornerRadius(dp(6).toFloat());setStroke(dp(1),Color.rgb(220,55,55))}
  private fun button(label:String,color:Int):Button=Button(this).apply{text=label;setTextColor(Color.BLACK);setAllCaps(false);setBackgroundTintList(android.content.res.ColorStateList.valueOf(color))}
- override fun onCreate(b:Bundle?){super.onCreate(b);window.statusBarColor=Color.rgb(244,246,248);window.decorView.systemUiVisibility=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);show();LanTransfer.start(this);receiveSharedReminder(intent);checkPermissions();try{Store.reconcileAlarms(this)}catch(e:Exception){android.util.Log.e("TimeIkiz", "Recovery failed", e)}}
+ override fun onCreate(b:Bundle?){super.onCreate(b);window.statusBarColor=Color.rgb(244,246,248);window.decorView.systemUiVisibility=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);show();LanTransfer.start(this);LanDiscovery.advertise(this);receiveSharedReminder(intent);checkPermissions();try{Store.reconcileAlarms(this)}catch(e:Exception){android.util.Log.e("TimeIkiz", "Recovery failed", e)}}
  override fun onNewIntent(intent:Intent){super.onNewIntent(intent);setIntent(intent);receiveSharedReminder(intent)}
  private fun receiveSharedReminder(intent:Intent?){
   val u=intent?.data?:return
