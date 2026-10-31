@@ -47,6 +47,8 @@ check(src/"MainActivity.kt", "selectNearby(", "Contact-based nearby pairing miss
 check(src/"PairHandshake.kt", "fun approve(", "Recipient approval flow missing")
 check(src/"PairHandshake.kt", "RSA/ECB/OAEPWithSHA-256AndMGF1Padding", "Encrypted pairing handshake missing")
 check(src/"MainActivity.kt", "PairHandshake.request(", "Automatic pairing initiation missing")
+check(src/"LanTransfer.kt", "fun confirmPair(", "Reciprocal LAN confirmation missing")
+check(src/"PairHandshake.kt", "LanTransfer.confirmPair(", "Handshake does not confirm both devices")
 if errors:
     for error in errors:
         print("FAIL:", error, file=sys.stderr)
