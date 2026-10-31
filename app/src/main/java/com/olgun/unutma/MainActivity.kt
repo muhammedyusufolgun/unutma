@@ -88,7 +88,7 @@ class MainActivity:Activity(){
   val fields=LinearLayout(this).apply{orientation=1;setPadding(dp(16),dp(8),dp(16),dp(8))}
   val ip=EditText(this).apply{hint="Karşı telefonun IP adresi";setSingleLine(true);setText(LanTransfer.peer(this@MainActivity))}
   val token=EditText(this).apply{hint="Karşı telefonun 24 karakterlik kodu";setSingleLine(true)}
-  fields.addView(TextView(this).apply{text="Bu telefon: "+LanTransfer.localIp()+" : 39471\\nBu telefonun kodu: "+LanTransfer.pairingCode(this@MainActivity)+"\\nKodları yalnızca güvendiğiniz kişiyle paylaşın."})
+  fields.addView(TextView(this).apply{text="Bu telefon: "+LanTransfer.localIp()+" : 39471\nBu telefonun kodu: "+LanTransfer.pairingCode(this@MainActivity)+"\\nKodları yalnızca güvendiğiniz kişiyle paylaşın."})
   fields.addView(ip);fields.addView(token)
   AlertDialog.Builder(this).setTitle("Aynı Wi-Fi ağında eşleştir").setView(fields).setPositiveButton("Kaydet"){_,_->try{LanTransfer.pair(this,ip.text.toString().trim(),token.text.toString().trim().uppercase(Locale.ROOT));Toast.makeText(this,"Eşleştirme kaydedildi",Toast.LENGTH_SHORT).show()}catch(e:Exception){Toast.makeText(this,e.message,Toast.LENGTH_LONG).show()}}.setNegativeButton("Vazgeç",null).show()
  }
