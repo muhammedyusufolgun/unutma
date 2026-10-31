@@ -33,6 +33,8 @@ save_pos = activity.find("Store.save(this,items);Alarms.cancel(this,id);Alarms.p
 if save_pos < 0:
     errors.append("Reminder edit must persist before canceling/replanning its alarm")
 check(src/"InternetMessaging.kt", "Inbox item $i failed; retry on next sync", "Inbox failure isolation missing")
+check(src/"MainActivity.kt", "Sesli mesaj boş olamaz", "Empty reminder text validation missing")
+check(src/"MainActivity.kt", "isLenient=false", "Strict reminder date/time parsing missing")
 if errors:
     for error in errors:
         print("FAIL:", error, file=sys.stderr)
