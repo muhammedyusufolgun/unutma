@@ -101,6 +101,8 @@ object LanTransfer {
      socket.getOutputStream().write("OK\n".toByteArray(Charsets.UTF_8))
      return
     }
+    // A valid ciphertext alone is insufficient: accept reminders only from the paired endpoint.
+    require(isPaired(c) && socket.inetAddress.hostAddress==peer(c)){"Sender is not the paired device"}
     val text=data.getString("text")
     val time=data.getLong("time")
     require(text.isNotBlank()&&text.length<=20000&&time>0)
