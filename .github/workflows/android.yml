@@ -36,7 +36,17 @@ jobs:
         with:
           gradle-version: '8.9'
       - name: Build debug APK
-        run: gradle --no-daemon --stacktrace assembleDebug --console=plain
+        run: |
+          mkdir -p output
+          set -o pipefail
+          gradle --no-daemon --stacktrace assembleDebug --console=plain 2>&1 | tee output/build.log
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Time-ikiz-Build-Log
+          path: output/build.log
+          if-no-files-found: ignore
       - name: Name APK
         run: |
           mkdir -p output
