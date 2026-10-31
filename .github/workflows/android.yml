@@ -12,6 +12,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate Android integration sources
         run: python3 tools/verify_time_ikiz_sources.py
+      - name: Test relay message signatures
+        run: |
+          python3 -m pip install 'cryptography>=42,<47'
+          cd relay
+          python3 -m unittest -v test_signatures
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
