@@ -78,6 +78,7 @@ class MainActivity:Activity(){
    1->ask("Kişi Ekle",""){peer->background{InternetMessaging.add(this,peer);"Kişi eklendi. Karşı taraf da eklemeli."}}
    2->ask("Kişi Sil",""){peer->background{InternetMessaging.delete(this,peer);"Kişi silindi"}}
    3->background{"${InternetMessaging.sync(this)} yeni mesaj alındı"}
+   4->Toast.makeText(this,"Kimliğim: "+InternetMessaging.myId(this),Toast.LENGTH_LONG).show()
    5->background{"Şifreleme SHA-256: "+InternetMessaging.myFingerprint()}
    6->ask("Doğrulanacak kişi",""){peer->ask("64 haneli SHA-256 parmak izi",""){fp->background{InternetMessaging.trustPeer(this,peer,fp);"Şifreleme anahtarı doğrulandı"}}}
    7->background{"İmza SHA-256: "+InternetMessaging.mySigningFingerprint(this)}
