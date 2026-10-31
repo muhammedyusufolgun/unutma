@@ -92,21 +92,7 @@ object LanTransfer {
     val line=reader.readLine()?:return
     require(line.length<=40000)
     val envelope=JSONObject(line)
-    if(envelope.optString("type")=="pair_request"){
-     val address=socket.inetAddress.hostAddress?:return
-     val now=System.currentTimeMillis()
-     val previous=lastPairRequest.put(address,now)?:0L
-     if(now-previous<30000L)return
-     val intent=android.content.Intent(c,MainActivity::class.java).apply{action="com.olgun.timeikiz.PAIR_REQUEST";addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)}
-     val manager=c.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-     val channel="lan_pair_requests"
-     manager.createNotificationChannel(android.app.NotificationChannel(channel,"Time-ikiz eşleştirme",android.app.NotificationManager.IMPORTANCE_HIGH))
-     val pending=android.app.PendingIntent.getActivity(c,39471,intent,android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE)
-     val notice=android.app.Notification.Builder(c,channel).setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle("Time-ikiz eşleştirme isteği").setContentText("İsteği incelemek için dokunun").setContentIntent(pending).setAutoCancel(true).build()
-     manager.notify(39471,notice)
-     socket.getOutputStream().write("PENDING\n".toByteArray(Charsets.UTF_8))
-     return
-    }
+    if(PairHandshake.receive(c,socket,envelope))return
     require(envelope.optString("type").isEmpty())
     val data=decrypt(code(c),envelope)
     val text=data.getString("text")
