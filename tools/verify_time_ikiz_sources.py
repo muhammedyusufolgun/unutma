@@ -40,7 +40,7 @@ check(root/"app/build.gradle.kts", 'applicationId = "com.olgun.timeikiz"', "Dist
 if "android.permission.RECEIVE_SMS" in (root/"app/src/main/AndroidManifest.xml").read_text():
     errors.append("Sensitive SMS permission must not be present")
 check(src/"LanTransfer.kt", "AES/GCM/NoPadding", "Missing authenticated LAN encryption")
-check(src/"MainActivity.kt", "LanTransfer.start(this)", "LAN listener not connected")
+check(src/"LanForegroundService.kt", "LanTransfer.start(applicationContext)", "LAN listener not connected")
 check(src/"MainActivity.kt", "LanTransfer.send(this,r)", "LAN send not connected")
 check(src/"LanDiscovery.kt", "discoverServices(", "NSD discovery missing")
 check(src/"MainActivity.kt", "selectNearby(", "Contact-based nearby pairing missing")
@@ -51,6 +51,8 @@ check(src/"LanTransfer.kt", "fun confirmPair(", "Reciprocal LAN confirmation mis
 check(src/"PairHandshake.kt", "LanTransfer.confirmPair(", "Handshake does not confirm both devices")
 check(src/"LanForegroundService.kt", "startForeground(", "LAN foreground service missing")
 check(src/"MainActivity.kt", "startLanService()", "LAN foreground service not wired")
+check(src/"LanForegroundService.kt", "LanTransfer.stop()", "LAN listener cleanup missing")
+check(src/"LanForegroundService.kt", "LanDiscovery.stop(", "LAN discovery cleanup missing")
 if errors:
     for error in errors:
         print("FAIL:", error, file=sys.stderr)
