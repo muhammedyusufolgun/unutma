@@ -94,9 +94,9 @@ object InternetMessaging {
   }catch(e:Exception){prefs(c).edit().putString("server",old).commit();throw e}
   check(prefs(c).edit().putString("id",id).putString("token",token).commit())
  }
- fun add(c:Context,peer:String)=req(c,"/contact/add",JSONObject().put("peer",path(peer).let{peer}))
+ fun add(c:Context,peer:String)=req(c,"/contact/add",JSONObject().put("peer",peer.also{path(it)}))
  fun delete(c:Context,peer:String):JSONObject {
-  val response=req(c,"/contact/delete",JSONObject().put("peer",path(peer).let{peer}))
+  val response=req(c,"/contact/delete",JSONObject().put("peer",peer.also{path(it)}))
   check(prefs(c).edit().remove("fingerprint_$peer").remove("signing_fingerprint_$peer").commit())
   return response
  }
