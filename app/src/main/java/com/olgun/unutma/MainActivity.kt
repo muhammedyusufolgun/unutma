@@ -20,8 +20,18 @@ class MainActivity:Activity(){
  private fun blackOutline():android.graphics.drawable.GradientDrawable=android.graphics.drawable.GradientDrawable().apply{setColor(Color.WHITE);setCornerRadius(dp(6).toFloat());setStroke(dp(1),Color.BLACK)}
  private fun redOutline():android.graphics.drawable.GradientDrawable=android.graphics.drawable.GradientDrawable().apply{setColor(Color.WHITE);setCornerRadius(dp(6).toFloat());setStroke(dp(1),Color.rgb(220,55,55))}
  private fun button(label:String,color:Int):Button=Button(this).apply{text=label;setTextColor(Color.BLACK);setAllCaps(false);setBackgroundTintList(android.content.res.ColorStateList.valueOf(color))}
- override fun onCreate(b:Bundle?){super.onCreate(b);window.statusBarColor=Color.rgb(244,246,248);window.decorView.systemUiVisibility=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);show();LanTransfer.start(this);LanDiscovery.advertise(this);LanDiscovery.discover(this);receiveSharedReminder(intent);checkPermissions();try{Store.reconcileAlarms(this)}catch(e:Exception){android.util.Log.e("TimeIkiz", "Recovery failed", e)}}
- override fun onNewIntent(intent:Intent){super.onNewIntent(intent);setIntent(intent);receiveSharedReminder(intent)}
+ override fun onCreate(b:Bundle?){super.onCreate(b);window.statusBarColor=Color.rgb(244,246,248);window.decorView.systemUiVisibility=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);show();LanTransfer.start(this);LanDiscovery.advertise(this);LanDiscovery.discover(this);receiveSharedReminder(intent);handlePairRequest(intent);checkPermissions();try{Store.reconcileAlarms(this)}catch(e:Exception){android.util.Log.e("TimeIkiz", "Recovery failed", e)}}
+ override fun onNewIntent(intent:Intent){super.onNewIntent(intent);setIntent(intent);receiveSharedReminder(intent);handlePairRequest(intent)}
+ private fun handlePairRequest(intent:Intent?){
+  if(intent?.action!="com.olgun.timeikiz.PAIR_REQUEST")return
+  AlertDialog.Builder(this).setTitle("Eşleştirme isteği")
+   .setMessage("Yakındaki bir Time-ikiz cihazı eşleştirme istedi. İsteği tanıdığınız kişiden aldığınızı doğrulayın. Onay verirseniz karşı tarafa kendi eşleştirme kodunuzu iletebilirsiniz.")
+   .setPositiveButton("Onayla"){_,_->
+    AlertDialog.Builder(this).setTitle("Eşleştirme kodunuz")
+     .setMessage(LanTransfer.pairingCode(this)+"\\nBu kodu yalnızca doğruladığınız kişiyle paylaşın.")
+     .setPositiveButton("Tamam",null).show()
+   }.setNegativeButton("Reddet",null).show()
+ }
  private fun receiveSharedReminder(intent:Intent?){
   val u=intent?.data?:return
   if(u.scheme!="timeikiz"||u.host!="reminder")return
@@ -97,6 +107,7 @@ class MainActivity:Activity(){
   val names=found.map{it.first}.toTypedArray()
   AlertDialog.Builder(this).setTitle("$contact için yakındaki Time-ikiz cihazı").setItems(names){_,which->
    val chosen=found[which]
+   Thread{try{LanTransfer.requestPair(chosen.second)}catch(e:Exception){android.util.Log.w("TimeIkiz","Pair request failed",e)}}.start()
    val token=EditText(this).apply{hint="Karşı telefonda gösterilen 24 karakterlik kod";setSingleLine(true)}
    AlertDialog.Builder(this).setTitle("Eşleştirmeyi doğrula").setMessage("Seçilen cihaz: "+chosen.first+"\\nKişinin onayıyla karşı telefondaki eşleştirme kodunu girin. Bu telefonun kodu: "+LanTransfer.pairingCode(this)).setView(token)
     .setPositiveButton("Eşleştir"){_,_->try{LanTransfer.pair(this,chosen.second,token.text.toString().trim().uppercase(Locale.ROOT));Toast.makeText(this,"Eşleştirme kaydedildi",Toast.LENGTH_LONG).show()}catch(e:Exception){Toast.makeText(this,e.message,Toast.LENGTH_LONG).show()}}
