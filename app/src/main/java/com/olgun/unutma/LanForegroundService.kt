@@ -5,16 +5,21 @@ import android.os.IBinder
 import android.os.Build
 import android.content.pm.ServiceInfo
 class LanForegroundService:Service(){
- companion object { const val STOP="com.olgun.unutma.STOP_LAN" }
+ companion object {
+  const val STOP="com.olgun.unutma.STOP_LAN"
+  fun enabled(c:android.content.Context)=c.getSharedPreferences("lan_service",0).getBoolean("enabled",true)
+ }
 
  override fun onBind(intent:Intent?):IBinder?=null
  override fun onStartCommand(intent:Intent?,flags:Int,startId:Int):Int {
   if(intent?.action==STOP){
+   getSharedPreferences("lan_service",0).edit().putBoolean("enabled",false).apply()
    LanTransfer.stop()
    LanDiscovery.stop(applicationContext)
    stopSelf()
    return START_NOT_STICKY
   }
+  getSharedPreferences("lan_service",0).edit().putBoolean("enabled",true).apply()
   val nm=getSystemService(NotificationManager::class.java)
   nm.createNotificationChannel(NotificationChannel("lan_service","Time-ikiz Wi-Fi",NotificationManager.IMPORTANCE_LOW))
   val stop=PendingIntent.getService(this,502,Intent(this,LanForegroundService::class.java).setAction(STOP),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
