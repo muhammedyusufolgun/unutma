@@ -1,4 +1,4 @@
-name: Time-ikiz APK Build (pilot)
+name: Time-ikiz APK Build (SMS-free)
 on:
   push:
     branches: [feature/ilet-e2ee-pilot]
