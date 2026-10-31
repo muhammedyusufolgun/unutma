@@ -10,6 +10,8 @@ class LanForegroundService:Service(){
  override fun onBind(intent:Intent?):IBinder?=null
  override fun onStartCommand(intent:Intent?,flags:Int,startId:Int):Int {
   if(intent?.action==STOP){
+   LanTransfer.stop()
+   LanDiscovery.stop(applicationContext)
    stopSelf()
    return START_NOT_STICKY
   }
@@ -22,5 +24,10 @@ class LanForegroundService:Service(){
   LanDiscovery.advertise(applicationContext)
   LanDiscovery.discover(applicationContext)
   return START_STICKY
+ }
+ override fun onDestroy(){
+  LanTransfer.stop()
+  LanDiscovery.stop(applicationContext)
+  super.onDestroy()
  }
 }
