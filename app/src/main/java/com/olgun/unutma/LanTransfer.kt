@@ -71,10 +71,10 @@ object LanTransfer {
     val messageId=data.getString("id")
     val r=Store.addIncomingAtomic(c,messageId,time,text,data.getBoolean("repeat"))
     if(r!=null)Alarms.plan(c,r)
-    socket.getOutputStream().write("OK\\n".toByteArray(Charsets.UTF_8))
+    socket.getOutputStream().write("OK\n".toByteArray(Charsets.UTF_8))
    }catch(e:Exception){
     Log.w("TimeIkizLAN","Rejected LAN message",e)
-    try{socket.getOutputStream().write("ERROR\\n".toByteArray(Charsets.UTF_8))}catch(_:Exception){}
+    try{socket.getOutputStream().write("ERROR\n".toByteArray(Charsets.UTF_8))}catch(_:Exception){}
    }
   }
  }
