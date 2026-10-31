@@ -20,7 +20,7 @@ class MainActivity:Activity(){
  private fun blackOutline():android.graphics.drawable.GradientDrawable=android.graphics.drawable.GradientDrawable().apply{setColor(Color.WHITE);setCornerRadius(dp(6).toFloat());setStroke(dp(1),Color.BLACK)}
  private fun redOutline():android.graphics.drawable.GradientDrawable=android.graphics.drawable.GradientDrawable().apply{setColor(Color.WHITE);setCornerRadius(dp(6).toFloat());setStroke(dp(1),Color.rgb(220,55,55))}
  private fun button(label:String,color:Int):Button=Button(this).apply{text=label;setTextColor(Color.BLACK);setAllCaps(false);setBackgroundTintList(android.content.res.ColorStateList.valueOf(color))}
- override fun onCreate(b:Bundle?){super.onCreate(b);window.statusBarColor=Color.rgb(244,246,248);window.decorView.systemUiVisibility=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);show();LanTransfer.start(this);LanDiscovery.advertise(this);receiveSharedReminder(intent);checkPermissions();try{Store.reconcileAlarms(this)}catch(e:Exception){android.util.Log.e("TimeIkiz", "Recovery failed", e)}}
+ override fun onCreate(b:Bundle?){super.onCreate(b);window.statusBarColor=Color.rgb(244,246,248);window.decorView.systemUiVisibility=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);show();LanTransfer.start(this);LanDiscovery.advertise(this);LanDiscovery.discover(this);receiveSharedReminder(intent);checkPermissions();try{Store.reconcileAlarms(this)}catch(e:Exception){android.util.Log.e("TimeIkiz", "Recovery failed", e)}}
  override fun onNewIntent(intent:Intent){super.onNewIntent(intent);setIntent(intent);receiveSharedReminder(intent)}
  private fun receiveSharedReminder(intent:Intent?){
   val u=intent?.data?:return
@@ -55,7 +55,7 @@ class MainActivity:Activity(){
  done.setOnClickListener{save()};root.addView(button("Kaydet ve İlet",0xffd9edf9.toInt()).apply{setOnClickListener{save()?.let{sendDialog(it)}}},LinearLayout.LayoutParams(-1,dp(48)));root.addView(button("Yeni Ekle",0xffb9efb7.toInt()).apply{setOnClickListener{editing=null;date.text.clear();time.text.clear();input.text.clear();dateChosen=false;timeChosen=false;input.requestFocus();(getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(input,InputMethodManager.SHOW_IMPLICIT)}},LinearLayout.LayoutParams(-1,dp(52)))
  
 
-  root.addView(button("Wi-Fi eşleştir",0xffc8e6ff.toInt()).apply{setOnClickListener{lanPairDialog()}},LinearLayout.LayoutParams(-1,dp(48)))
+  root.addView(button("Rehberden kişi ekle ve eşleştir",0xffc8e6ff.toInt()).apply{setOnClickListener{lanPairDialog()}},LinearLayout.LayoutParams(-1,dp(48)))
   list=LinearLayout(this).apply{orientation=1};root.addView(list);root.addView(Space(this),LinearLayout.LayoutParams(1,dp(28)));root.addView(TextView(this).apply{text="Muhammed Yusuf OLGUN";gravity=Gravity.CENTER;textSize=12f;setTextColor(0xffaaaaaa.toInt())},LinearLayout.LayoutParams(-1,dp(35)));render()}
  private fun save():Reminder?{try{val dateRaw=date.text.toString().trim();val repeat=dateRaw.isEmpty();val d=if(repeat)Date() else {require(dateRaw.matches(Regex("\\d{2}\\.\\d{2}\\.\\d{4}"))){"Tarih GG.AA.YYYY olmalı"};fmt.apply{isLenient=false}.parse(dateRaw)?:throw Exception("Geçersiz tarih")};val raw=time.text.toString().trim();require(raw.matches(Regex("([01]\\d|2[0-3]):[0-5]\\d"))){"Saat SS:DD biçiminde olmalı"};require(input.text.toString().isNotBlank()){"Sesli mesaj boş olamaz"};val hm=raw;val t=clock.apply{isLenient=false}.parse(hm)?:throw Exception("Geçersiz saat");val cal=Calendar.getInstance().apply{time=d};val tc=Calendar.getInstance().apply{time=t};cal.set(Calendar.HOUR_OF_DAY,tc.get(Calendar.HOUR_OF_DAY));cal.set(Calendar.MINUTE,tc.get(Calendar.MINUTE));cal.set(Calendar.SECOND,0);cal.set(Calendar.MILLISECOND,0);if(!repeat && cal.timeInMillis<=System.currentTimeMillis())throw IllegalArgumentException("Gelecekte bir tarih ve saat girin")
  val items=Store.all(this).toMutableList();val id=editing?:((items.maxOfOrNull{it.id}?:0)+1);require(id>0){"Hatırlatma kimliği geçersiz"};if(editing!=null)require(items.any{it.id==id}){"Düzenlenecek hatırlatma bulunamadı"};items.removeAll{it.id==id};val r=Reminder(id,cal.timeInMillis,input.text.toString().trim(),repeat);items.add(r);Store.save(this,items);Alarms.cancel(this,id);Alarms.plan(this,r);editing=null;date.text.clear();time.text.clear();input.text.clear();(getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(input.windowToken,0);input.clearFocus();render();Toast.makeText(this,"Mesaj kaydedildi",Toast.LENGTH_SHORT).show();return r
@@ -85,12 +85,23 @@ class MainActivity:Activity(){
  override fun onPause(){refreshTask?.let{handler.removeCallbacks(it)};refreshTask=null;super.onPause()}
 
  private fun lanPairDialog(){
-  val fields=LinearLayout(this).apply{orientation=1;setPadding(dp(16),dp(8),dp(16),dp(8))}
-  val ip=EditText(this).apply{hint="Karşı telefonun IP adresi";setSingleLine(true);setText(LanTransfer.peer(this@MainActivity))}
-  val token=EditText(this).apply{hint="Karşı telefonun 24 karakterlik kodu";setSingleLine(true)}
-  fields.addView(TextView(this).apply{text="Bu telefon: "+LanTransfer.localIp()+" : 39471\nBu telefonun kodu: "+LanTransfer.pairingCode(this@MainActivity)+"\\nKodları yalnızca güvendiğiniz kişiyle paylaşın."})
-  fields.addView(ip);fields.addView(token)
-  AlertDialog.Builder(this).setTitle("Aynı Wi-Fi ağında eşleştir").setView(fields).setPositiveButton("Kaydet"){_,_->try{LanTransfer.pair(this,ip.text.toString().trim(),token.text.toString().trim().uppercase(Locale.ROOT));Toast.makeText(this,"Eşleştirme kaydedildi",Toast.LENGTH_SHORT).show()}catch(e:Exception){Toast.makeText(this,e.message,Toast.LENGTH_LONG).show()}}.setNegativeButton("Vazgeç",null).show()
+  try{startActivityForResult(Intent(Intent.ACTION_PICK,android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI),44)}
+  catch(e:Exception){Toast.makeText(this,"Rehber açılamadı",Toast.LENGTH_LONG).show()}
+ }
+ private fun selectNearby(contact:String){
+  val found=LanDiscovery.nearby()
+  if(found.isEmpty()){
+   AlertDialog.Builder(this).setTitle("Cihaz bulunamadı").setMessage("İki telefonda Time-ikiz açık ve aynı Wi-Fi ağına bağlı olmalı. Cihazları yeniden aramak için tekrar deneyin.").setPositiveButton("Tamam",null).show()
+   return
+  }
+  val names=found.map{it.first}.toTypedArray()
+  AlertDialog.Builder(this).setTitle("$contact için yakındaki Time-ikiz cihazı").setItems(names){_,which->
+   val chosen=found[which]
+   val token=EditText(this).apply{hint="Karşı telefonda gösterilen 24 karakterlik kod";setSingleLine(true)}
+   AlertDialog.Builder(this).setTitle("Eşleştirmeyi doğrula").setMessage("Seçilen cihaz: "+chosen.first+"\\nKişinin onayıyla karşı telefondaki eşleştirme kodunu girin. Bu telefonun kodu: "+LanTransfer.pairingCode(this)).setView(token)
+    .setPositiveButton("Eşleştir"){_,_->try{LanTransfer.pair(this,chosen.second,token.text.toString().trim().uppercase(Locale.ROOT));Toast.makeText(this,"Eşleştirme kaydedildi",Toast.LENGTH_LONG).show()}catch(e:Exception){Toast.makeText(this,e.message,Toast.LENGTH_LONG).show()}}
+    .setNegativeButton("Vazgeç",null).show()
+  }.setNegativeButton("Vazgeç",null).show()
  }
  private fun sendDialog(r:Reminder){
   if(LanTransfer.peer(this).isNotBlank()){
@@ -105,6 +116,11 @@ class MainActivity:Activity(){
  }
  override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?){
   super.onActivityResult(requestCode,resultCode,data)
+  if(requestCode==44 && resultCode==RESULT_OK){
+   val uri=data?.data?:return
+   contentResolver.query(uri,arrayOf(android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME),null,null,null)?.use{cursor->if(cursor.moveToFirst())selectNearby(cursor.getString(0)?: "Seçilen kişi")}
+   return
+  }
   if(requestCode!=42||resultCode!=RESULT_OK)return
   val r=pendingShare?:return
   pendingShare=null
