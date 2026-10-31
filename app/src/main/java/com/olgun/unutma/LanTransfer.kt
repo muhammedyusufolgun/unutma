@@ -15,6 +15,7 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import android.util.Base64
 import java.util.concurrent.Executors
+import java.net.InetSocketAddress
 
 /** Local Wi-Fi transport. Only use on a trusted private network; no public internet exposure. */
 object LanTransfer {
@@ -73,6 +74,7 @@ object LanTransfer {
   require(ciphertext.size<=40000)
   return JSONObject(String(cipher.doFinal(ciphertext),Charsets.UTF_8))
  }
+ fun isPaired(c:Context)=peer(c).isNotBlank()
  private fun handle(c:Context,s:Socket){
   s.use { socket ->
    socket.soTimeout=6000
