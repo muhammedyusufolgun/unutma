@@ -136,6 +136,7 @@ class MainActivity:Activity(){
    contentResolver.query(uri,arrayOf(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER),null,null,null)?.use{cursor->
     if(!cursor.moveToFirst())return
     val phone=cursor.getString(0)
+    if(r.text.length>1500){Toast.makeText(this,"SMS iletimi için mesaj en fazla 1500 karakter olmalı",Toast.LENGTH_LONG).show();return}
     val payload=android.net.Uri.Builder().scheme("timeikiz").authority("reminder")
      .appendQueryParameter("at",r.time.toString()).appendQueryParameter("repeat",r.repeat.toString())
      .appendQueryParameter("text",r.text).build().toString()
