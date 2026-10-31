@@ -58,6 +58,19 @@ class RelayTests(unittest.TestCase):
   self.client.post("/ack",headers=bob,json={"message_id":"msg1"})
   self.assertEqual(len(self.client.get("/inbox",headers=bob).json["messages"]),0)
 
+ def test_weak_rsa_key_rejected(self):
+  key=Ed25519PrivateKey.generate()
+  signing=base64.b64encode(key.public_key().public_bytes(
+   serialization.Encoding.Raw,serialization.PublicFormat.Raw)).decode()
+  weak=generate_private_key(public_exponent=65537,key_size=2048)
+  pub=base64.b64encode(weak.public_key().public_bytes(
+   serialization.Encoding.DER,serialization.PublicFormat.SubjectPublicKeyInfo)).decode()
+  response=self.client.post("/register",json={
+   "id":"weakuser1","token":base64.b64encode(b"t"*32).decode(),
+   "public_key":pub,"signing_public_key":signing})
+  self.assertEqual(response.status_code,400)
+  self.assertEqual(self.client.get("/inbox",headers={"Authorization":"Bearer "+base64.b64encode(b"t"*32).decode()}).status_code,401)
+
  def test_malformed_requests_rejected(self):
   alice=self.register("alice0001")
   self.assertEqual(self.client.post("/register",json={"id":None,"token":False}).status_code,400)
