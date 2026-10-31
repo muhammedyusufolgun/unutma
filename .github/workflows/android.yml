@@ -10,12 +10,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - name: Require actual Time-ikiz sources
-        run: |
-          test -f app/src/main/java/com/olgun/unutma/InternetMessaging.kt || { echo "::error::Time-ikiz Android messaging sources not committed"; exit 1; }
-          test -f app/src/main/java/com/olgun/unutma/MessageSyncWorker.kt || { echo "::error::Background worker not committed"; exit 1; }
-          grep -q 'org.bouncycastle:bcprov' app/build.gradle.kts || { echo "::error::Signing dependency missing"; exit 1; }
-          grep -q 'androidx.work:work-runtime' app/build.gradle.kts || { echo "::error::Background sync dependency missing"; exit 1; }
+      - name: Validate Android integration sources
+        run: python3 tools/verify_time_ikiz_sources.py
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
