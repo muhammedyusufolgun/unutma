@@ -24,13 +24,13 @@ class MainActivity:Activity(){
  override fun onNewIntent(intent:Intent){super.onNewIntent(intent);setIntent(intent);receiveSharedReminder(intent);handlePairRequest(intent)}
  private fun handlePairRequest(intent:Intent?){
   if(intent?.action!="com.olgun.timeikiz.PAIR_REQUEST")return
-  AlertDialog.Builder(this).setTitle("Eşleştirme isteği")
-   .setMessage("Yakındaki bir Time-ikiz cihazı eşleştirme istedi. İsteği tanıdığınız kişiden aldığınızı doğrulayın. Onay verirseniz karşı tarafa kendi eşleştirme kodunuzu iletebilirsiniz.")
+  val id=intent.getStringExtra("pair_id")?:return
+  AlertDialog.Builder(this).setTitle("Time-ikiz eşleştirme isteği")
+   .setMessage("Yakındaki bir cihaz eşleşmek istiyor. İsteği gerçekten tanıdığınız kişinin gönderdiğini doğrulayın.")
    .setPositiveButton("Onayla"){_,_->
-    AlertDialog.Builder(this).setTitle("Eşleştirme kodunuz")
-     .setMessage(LanTransfer.pairingCode(this)+"\\nBu kodu yalnızca doğruladığınız kişiyle paylaşın.")
-     .setPositiveButton("Tamam",null).show()
-   }.setNegativeButton("Reddet",null).show()
+    val accepted=PairHandshake.approve(this,id)
+    Toast.makeText(this,if(accepted)"Eşleştirme onaylandı" else "İsteğin süresi doldu",Toast.LENGTH_LONG).show()
+   }.setNegativeButton("Reddet"){_,_->PairHandshake.reject(id)}.show()
  }
  private fun receiveSharedReminder(intent:Intent?){
   val u=intent?.data?:return
@@ -107,11 +107,11 @@ class MainActivity:Activity(){
   val names=found.map{it.first}.toTypedArray()
   AlertDialog.Builder(this).setTitle("$contact için yakındaki Time-ikiz cihazı").setItems(names){_,which->
    val chosen=found[which]
-   Thread{try{LanTransfer.requestPair(chosen.second)}catch(e:Exception){android.util.Log.w("TimeIkiz","Pair request failed",e)}}.start()
-   val token=EditText(this).apply{hint="Karşı telefonda gösterilen 24 karakterlik kod";setSingleLine(true)}
-   AlertDialog.Builder(this).setTitle("Eşleştirmeyi doğrula").setMessage("Seçilen cihaz: "+chosen.first+"\\nKişinin onayıyla karşı telefondaki eşleştirme kodunu girin. Bu telefonun kodu: "+LanTransfer.pairingCode(this)).setView(token)
-    .setPositiveButton("Eşleştir"){_,_->try{LanTransfer.pair(this,chosen.second,token.text.toString().trim().uppercase(Locale.ROOT));Toast.makeText(this,"Eşleştirme kaydedildi",Toast.LENGTH_LONG).show()}catch(e:Exception){Toast.makeText(this,e.message,Toast.LENGTH_LONG).show()}}
-    .setNegativeButton("Vazgeç",null).show()
+   Thread{
+    val message=try{if(PairHandshake.request(this,chosen.second))"Eşleştirme onaylandı; hatırlatma gönderebilirsiniz" else "Eşleştirme onaylanmadı veya zaman aşımına uğradı"}
+    catch(e:Exception){"Eşleştirme başarısız: "+(e.message?:"Bağlantı sorunu")}
+    runOnUiThread{Toast.makeText(this,message,Toast.LENGTH_LONG).show()}
+   }.start()
   }.setNegativeButton("Vazgeç",null).show()
  }
  private fun sendDialog(r:Reminder){
