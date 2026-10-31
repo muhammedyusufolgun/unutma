@@ -89,7 +89,7 @@ object PairHandshake {
     cipher.init(Cipher.DECRYPT_MODE,keys.private)
     val token=String(cipher.doFinal(un64(result)),Charsets.UTF_8)
     LanTransfer.pair(c,ip,token)
-    return true
+    return LanTransfer.confirmPair(c,ip,token)
    }
   }
   return false
