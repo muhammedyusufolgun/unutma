@@ -83,30 +83,6 @@ class MainActivity:Activity(){
  override fun onResume(){super.onResume();try{Store.reconcileAlarms(this)}catch(e:Exception){android.util.Log.e("TimeIkizAlarm","Resume alarm reconciliation failed",e)};refreshTask?.let{handler.removeCallbacks(it)};val tick=object:Runnable{override fun run(){render();handler.postDelayed(this,500)}};refreshTask=tick;handler.post(tick)}
  override fun onPause(){refreshTask?.let{handler.removeCallbacks(it)};refreshTask=null;super.onPause()}
 
- private fun ask(title:String,hint:String,action:(String)->Unit){
-  val field=EditText(this).apply{setSingleLine(true);setText(hint)}
-  AlertDialog.Builder(this).setTitle(title).setView(field).setPositiveButton("Tamam"){_,_->action(field.text.toString().trim())}.setNegativeButton("Vazgeç",null).show()
- }
- private fun background(task:()->String){
-  Thread {
-   val result=try{task()}catch(e:Exception){"Hata: "+(e.message?:"İşlem başarısız")}
-   runOnUiThread{Toast.makeText(this,result,Toast.LENGTH_LONG).show();try{render()}catch(_:Exception){}}
-  }.start()
- }
- private fun messagingDialog(){
-  val options=arrayOf("Sunucu ve kimlik kaydı","Kişi Ekle","Kişi Sil","Gelen mesajları kontrol et","Kimliğim: "+InternetMessaging.myId(this),"Şifreleme anahtarımın parmak izi","Kişinin şifreleme anahtarını doğrula","İmza anahtarımın parmak izi","Kişinin imza anahtarını doğrula")
-  AlertDialog.Builder(this).setTitle("İnternet Mesajlaşma").setItems(options){_,which->when(which){
-   0->ask("HTTPS sunucu adresi","https://sunucu.example"){url->ask("Benzersiz kullanıcı kimliği",""){id->background{InternetMessaging.register(this,url,id);MessageSyncScheduler.schedule(this);"Kayıt tamamlandı"}}}
-   1->ask("Kişi Ekle",""){peer->background{InternetMessaging.add(this,peer);"Kişi eklendi. Karşı taraf da eklemeli."}}
-   2->ask("Kişi Sil",""){peer->background{InternetMessaging.delete(this,peer);"Kişi silindi"}}
-   3->background{"${InternetMessaging.sync(this)} yeni mesaj alındı"}
-   4->Toast.makeText(this,"Kimliğim: "+InternetMessaging.myId(this),Toast.LENGTH_LONG).show()
-   5->background{"Şifreleme SHA-256: "+InternetMessaging.myFingerprint()}
-   6->ask("Doğrulanacak kişi",""){peer->ask("64 haneli SHA-256 parmak izi",""){fp->background{InternetMessaging.trustPeer(this,peer,fp);"Şifreleme anahtarı doğrulandı"}}}
-   7->background{"İmza SHA-256: "+InternetMessaging.mySigningFingerprint(this)}
-   8->ask("İmza anahtarı doğrulanacak kişi",""){peer->ask("64 haneli SHA-256 parmak izi",""){fp->background{InternetMessaging.trustSigningPeer(this,peer,fp);"İmza anahtarı doğrulandı"}}}
-  }}.show()
- }
  private fun sendDialog(r:Reminder){
   pendingShare=r
   try{
