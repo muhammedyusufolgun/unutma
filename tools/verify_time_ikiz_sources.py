@@ -32,6 +32,7 @@ activity = (src / "MainActivity.kt").read_text(encoding="utf-8")
 save_pos = activity.find("Store.save(this,items);Alarms.cancel(this,id);Alarms.plan(this,r);")
 if save_pos < 0:
     errors.append("Reminder edit must persist before canceling/replanning its alarm")
+check(src/"InternetMessaging.kt", "Inbox item $i failed; retry on next sync", "Inbox failure isolation missing")
 if errors:
     for error in errors:
         print("FAIL:", error, file=sys.stderr)
