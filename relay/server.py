@@ -102,8 +102,10 @@ def add_contact():
 
 @app.post("/contact/delete")
 def delete_contact():
-    data=request.get_json(silent=True) or {}
+    data=request.get_json(silent=True)
+    if not isinstance(data,dict):return error("Invalid JSON object",400)
     peer=data.get("peer","")
+    if not isinstance(peer,str) or not ID.fullmatch(peer):return error("Invalid peer",400)
     with LOCK,connection() as db:
         user=identity(db)
         if not user:return error("Unauthorized",401)
